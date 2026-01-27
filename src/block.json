@@ -28,6 +28,10 @@
 		"showVenue": {
 			"type": "boolean",
 			"default": false
+		},
+		"separator": {
+			"type": "string",
+			"default": " > "
 		}
 	},
 	"usesContext": ["postId", "postType"],

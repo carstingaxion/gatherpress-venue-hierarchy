@@ -1,128 +1,91 @@
 # GatherPress Venue Hierarchy
 
-Contributors:      WordPress Telex
-Tags:              block, gatherpress, venue, hierarchy, geocoding, location, events
-Tested up to:      6.8
-Stable tag:        0.1.0
-License:           GPLv2 or later
-License URI:       https://www.gnu.org/licenses/gpl-2.0.html
-Requires Plugins:  gatherpress
+**Contributors:**      carstenbach & WordPress Telex  
+**Tags:**              block, gatherpress, venue, hierarchy, geocoding, location, events  
+**Tested up to:**      6.8  
+**Stable tag:**        0.1.0  
+**License:**           GPLv2 or later  
+**License URI:**       https://www.gnu.org/licenses/gpl-2.0.html  
+**Requires Plugins:**  gatherpress  
 
-Automatically organizes GatherPress event locations into a hierarchical taxonomy system using geocoding, with a customizable display block.
+Automatically creates hierarchical location taxonomy for GatherPress events using geocoded address data.
 
 ## Description
 
-GatherPress Venue Hierarchy is a powerful add-on for the GatherPress events plugin that automatically transforms venue addresses into structured, hierarchical geographic data. It enables you to organize and filter events by continent, country, state/region, and city, while providing flexible display options for showing location information on your site.
+This plugin extends GatherPress by adding a hierarchical location taxonomy. When an event is saved, the plugin geocodes the venue address and creates taxonomy terms organized by continent, country, state, city, street, and street number. A Gutenberg block displays these hierarchies with configurable level filtering.
 
-### What Does This Plugin Do?
+### What This Plugin Does
 
-The plugin automatically:
+* Creates a custom hierarchical taxonomy "gatherpress-location"
+* Geocodes venue addresses using the Nominatim (OpenStreetMap) API
+* Automatically generates taxonomy terms in 7 levels: Continent > Country > State > City > Street > Street+Number
+* Establishes parent-child relationships between terms
+* Associates created terms with events
+* Provides a Gutenberg block for displaying location hierarchies
+* Caches API responses for 1 hour using WordPress transients
 
-* **Geocodes venue addresses** - When you save a GatherPress event with a venue address, the plugin queries the Nominatim (OpenStreetMap) API to extract detailed geographic information
-* **Creates hierarchical location terms** - Builds a five-level taxonomy structure: Continent > Country > State/Region > City, with proper parent-child relationships
-* **Associates locations with events** - Automatically tags events with all relevant location terms from the hierarchy
-* **Provides a display block** - Includes a Gutenberg block for showing location hierarchies with customizable level filtering and optional links
-* **Caches API responses** - Stores geocoding results for one hour to minimize API calls and improve performance
+### Technical Implementation
 
-### How Does It Work?
+**Geocoding Process:**
 
-**Technical Overview:**
+1. When a GatherPress event is saved (priority 20, after GatherPress core processes at priority 10), the plugin retrieves venue information via GatherPress\Core\Event::get_venue_information()
+2. The full address is sent to Nominatim API (https://nominatim.openstreetmap.org/search) with format=json and addressdetails=1
+3. API response includes address components: house_number, road/street, city/town/village, state/region/province, country, country_code
+4. Continent is derived from country_code using an internal mapping with WordPress core translations
+5. Results are cached as transients with key format: gpvh_geocode_{md5(address)}
+6. Cache duration: 3600 seconds (1 hour)
 
-1. **Event Creation/Update** - When you save a GatherPress event, the plugin retrieves the venue information from GatherPress's core Event class
-2. **Address Geocoding** - The venue's full address is sent to the Nominatim API, which returns detailed address components including coordinates and administrative regions
-3. **Continent Mapping** - Since Nominatim doesn't provide continent data, the plugin uses an internal country-to-continent mapping with WordPress's core translations
-4. **Hierarchy Building** - Geographic terms are created in hierarchical order (continent first, then country, state, city), with each level properly linked to its parent
-5. **Term Association** - All created terms are associated with the event, allowing filtering at any geographic level
-6. **Duplicate Prevention** - The plugin checks for existing terms before creating new ones and validates parent relationships to maintain data integrity
+**Hierarchy Building:**
 
-**Key Components:**
+1. Terms are created in top-down order: Continent → Country → State → City → Street → Street+Number
+2. Each term stores its parent's term_id, creating a parent-child chain
+3. Street number terms combine street name and number (e.g., "Main St 123") to avoid numerous single-digit terms
+4. Before creating a term, the plugin checks if it exists by name
+5. If a term exists with incorrect parent, the plugin updates the parent relationship
+6. All term IDs are associated with the event using wp_set_object_terms()
 
-* **Custom Taxonomy** - Creates "gatherpress-location" taxonomy (separate from GatherPress's venue system)
-* **Geocoder Class** - Handles API communication, response parsing, and caching using WordPress transients
-* **Hierarchy Builder** - Manages term creation with proper parent-child relationships and duplicate detection
-* **Display Block** - Gutenberg block with dual-handle range control for selecting which hierarchy levels to show
+**Special Handling:**
 
-### Who Should Use This Plugin?
+* German-speaking regions (DE, AT, CH, LU): Uses 'state' field directly for Bundesland/Canton
+* Other countries: Falls back through state → region → province for administrative divisions
+* City extraction: city → town → village → county (urban to rural priority)
+* Street extraction: road → street → pedestrian (common field name variations)
 
-This plugin is ideal for:
+### Display Block Features
 
-**Event Organizers:**
-* Running multi-city or international event series
-* Need to organize events by geographic region
-* Want visitors to filter events by location
-* Display event locations in a consistent, structured format
+**Hierarchy Level Control:**
 
-**Meetup and Community Groups:**
-* Coordinating events across multiple cities or regions
-* Managing regional chapters or local groups
-* Providing location-based event discovery
+* Dual-handle range control for selecting start and end levels
+* 7 levels available: Continent, Country, State, City, Street, Number
+* Staggered label layout (alternating top/bottom rows) for readability
+* Real-time preview of selected range
 
-**Conference and Festival Organizers:**
-* Hosting events in various cities throughout the year
-* Need to showcase event distribution geographically
-* Want to help attendees find events near them
+**Display Options:**
 
-**Educational Institutions:**
-* Organizing workshops or lectures across campuses
-* Managing events in different buildings or locations
-* Coordinating regional educational programs
+* Customizable separator between terms (default: " > ")
+* Optional term links to taxonomy archive pages
+* Optional venue display at end of hierarchy
+* Venue links to GatherPress venue post when enabled
+* Full WordPress block editor support (alignment, colors, spacing)
 
-**WordPress Developers:**
-* Building event websites with advanced location features
-* Need programmatic access to hierarchical location data
-* Want to create custom location-based queries
+**Implementation Details:**
 
-### Features
-
-**Automatic Geocoding:**
-* Nominatim OpenStreetMap API integration
-* One-hour caching to minimize API calls
-* Enhanced support for German-speaking regions (DE, AT, CH, LU)
-* Comprehensive global coverage
-
-**Hierarchical Organization:**
-* Five-level hierarchy: Continent > Country > State > City > (optional) Venue
-* Proper parent-child term relationships
-* Maintains data integrity with duplicate detection
-* Updates incorrect parent relationships automatically
-
-**Flexible Display Block:**
-* Dual-handle range control for selecting hierarchy levels
-* Show entire hierarchy or specific subsets (e.g., only Country through City)
-* Optional clickable links to location archive pages
-* Optional venue name display with link to venue post
-* Full WordPress block editor integration (alignment, colors, spacing)
-
-**WordPress Integration:**
-* Native taxonomy system for compatibility with all WordPress queries
-* REST API support for headless WordPress setups
-* Proper internationalization with translated continent names
-* Admin column showing location hierarchy for events
-* Standard WordPress archive pages for each location term
-
-**Developer-Friendly:**
-* Clean, well-documented code following WordPress coding standards
-* Singleton pattern implementation for performance
-* Extensive PHPStan-compatible type hints and docblocks
-* Filter and action hooks for customization
-* All geographic data accessible via standard WordPress taxonomy functions
+* Editor: Uses useSelect hook to query location terms and venue taxonomy
+* Frontend: Singleton renderer class (GatherPress_Venue_Hierarchy_Block_Renderer)
+* Term retrieval: Ordered by parent relationship to maintain hierarchy
+* Path building: Identifies leaf terms (deepest in hierarchy), builds paths by traversing parents
+* Level filtering: Uses array_slice on complete paths based on startLevel/endLevel
 
 ### Use Cases
 
-**Example 1: Multi-City Tech Meetup**
-A technology meetup group organizes events in Munich, Berlin, and Vienna. The plugin automatically creates:
-* Europe (Continent)
-  * Germany > Bavaria > Munich
-  * Germany > Berlin > Berlin
-  * Austria > Vienna > Vienna
+**Multi-Location Event Series:**
+Organizations running events in multiple cities can filter by geographic level. Events are queryable at any hierarchy level using standard WordPress taxonomy queries.
 
-Visitors can filter to see all European events, all German events, or events in specific cities.
+**Regional Event Management:**
+Local chapters or regional groups can organize events by state or city while maintaining connection to parent geographic regions.
 
-**Example 2: International Conference Series**
-A conference runs events globally. The display block shows "North America > United States > California > San Francisco" for the SF event, while the Tokyo event shows "Asia > Japan > Tokyo > Tokyo". Attendees can browse by continent to find events in their region.
-
-**Example 3: Regional Workshop Network**
-An organization runs workshops across Bavaria. The block displays only "Bavaria > Munich" (filtering out Continent and Country levels) for a clean, focused location display.
+**International Event Coordination:**
+Global organizations can display continent-level groupings while drilling down to specific cities and venues.
 
 ## Installation
 
@@ -132,156 +95,182 @@ An organization runs workshops across Bavaria. The block displays only "Bavaria 
 * PHP 7.4 or higher
 * GatherPress plugin installed and activated
 
-### Automatic Installation
+### Installation Steps
 
-1. Log in to your WordPress admin panel
-2. Navigate to Plugins > Add New
-3. Search for "GatherPress Venue Hierarchy"
-4. Click "Install Now" and then "Activate"
+1. Upload plugin files to `/wp-content/plugins/gatherpress-venue-hierarchy/`
+2. Activate the plugin through the WordPress Plugins menu
+3. Plugin registers taxonomy and block automatically on activation
 
-### Manual Installation
+### Configuration
 
-1. Download the plugin zip file
-2. Upload the contents to the `/wp-content/plugins/gatherpress-venue-hierarchy` directory
-3. Activate the plugin through the 'Plugins' menu in WordPress
-
-### After Installation
-
-1. Navigate to Settings > GatherPress Location to configure default geographic terms (optional)
-2. Create or edit a GatherPress event with a venue address
-3. Save the event - location hierarchy will be generated automatically
-4. Add the "Location Hierarchy Display" block to your event template or any post/page
-5. Customize the block settings to control which levels display
+1. Navigate to Settings > GatherPress Location
+2. Configure default geographic terms (optional)
+3. Create or edit GatherPress events with venue addresses
+4. Location terms are generated automatically on save
+5. Add "Location Hierarchy Display" block to templates or posts
 
 ## Frequently Asked Questions
 
-### Does this require GatherPress?
+### How does geocoding work?
 
-Yes, this is an add-on specifically designed for GatherPress. It requires GatherPress to be installed and activated to function. The plugin integrates with GatherPress's venue system to extract address information.
-
-### How does the geocoding work?
-
-The plugin uses the Nominatim API from OpenStreetMap, a free and open-source geocoding service. When you save an event with a venue address, the plugin sends the full address to Nominatim, which returns detailed geographic information including address components and coordinates. Results are cached as WordPress transients for one hour to minimize API calls and improve performance.
-
-### Is the Nominatim API free?
-
-Yes, Nominatim is completely free and open-source. However, please review OpenStreetMap's usage policy. For high-volume sites, consider setting up your own Nominatim instance or using a commercial geocoding service via custom code.
+The plugin sends venue addresses to Nominatim API (OpenStreetMap). Response includes coordinates and address components. Results are cached as WordPress transients for 1 hour. Cache key format: `gpvh_geocode_{md5(address)}`.
 
 ### What happens if geocoding fails?
 
-If the Nominatim API is unavailable or returns no results, the event will simply not have location terms associated with it. You can manually add location terms through the WordPress admin interface, or the plugin will automatically retry geocoding the next time you save the event.
+Events without location terms can have terms added manually through WordPress admin. Geocoding will retry automatically when the event is saved again.
 
 ### Can I manually edit location terms?
 
-Yes! The location terms are standard WordPress taxonomy terms. You can add, edit, or delete them through the WordPress admin (they appear in the sidebar menu). However, if you delete all location terms from an event and then save the event again, the plugin will automatically recreate them via geocoding.
+Yes. Terms are standard WordPress taxonomy terms accessible through admin interface. Manual edits persist unless geocoding recreates terms (occurs when all terms are deleted and event is resaved).
 
-### Can I set default locations?
+### What is the API usage policy?
 
-Yes, navigate to Settings > GatherPress Location to configure default continent, country, state, and city terms. These defaults are available for reference but the plugin primarily relies on geocoding actual venue addresses.
+Nominatim is free but has usage limits. Review OpenStreetMap's Nominatim Usage Policy. For high-volume sites, consider:
+* Self-hosted Nominatim instance
+* Commercial geocoding service
+* Extended cache duration
 
 ### What regions are supported?
 
-The plugin works with any geographic location worldwide. It has enhanced support for German-speaking regions (Germany, Austria, Switzerland, Luxembourg) with specific handling for their administrative structure (Bundesländer/Cantons), but fully supports all countries and regions returned by Nominatim.
+All regions returned by Nominatim are supported. Enhanced handling for German-speaking regions (DE, AT, CH, LU) uses specific administrative structure (Bundesländer/Cantons).
 
-### Does this replace GatherPress's venue system?
+### How does this relate to GatherPress venues?
 
-No, this plugin works alongside GatherPress's existing venue system. It creates a separate "gatherpress-location" taxonomy that organizes events geographically, while GatherPress continues to manage detailed venue information (address, phone, website, etc.). Think of it as adding geographic organization to your existing venue data.
+This plugin creates a separate "gatherpress-location" taxonomy. GatherPress's venue system (venue post type and `_gatherpress_venue` taxonomy) remains unchanged. The location taxonomy provides geographic organization while GatherPress manages venue details (address, phone, website).
 
-### Can I display the venue name in the block?
+### How do I query events by location?
 
-Yes! The block includes a "Show venue" toggle that displays the GatherPress venue name at the end of the location hierarchy (e.g., "Europe > Germany > Bavaria > Munich > Conference Center"). The venue can be displayed as plain text or as a clickable link to the venue post, depending on your "Enable term links" setting.
+Use standard WordPress taxonomy queries:
 
-### How do I show only certain hierarchy levels?
+```php
+$args = array(
+    'post_type' => 'gatherpress_event',
+    'tax_query' => array(
+        array(
+            'taxonomy' => 'gatherpress-location',
+            'field'    => 'slug',
+            'terms'    => 'bavaria',
+        ),
+    ),
+);
+$query = new WP_Query( $args );
+```
 
-The block includes a dual-handle range control that lets you select which levels to display. For example:
-* Levels 1-5: Show full hierarchy (Continent through City)
-* Levels 2-3: Show only Country and State
-* Levels 3-3: Show only State
-* Levels 1-2: Show Continent and Country
+### How do I display only specific hierarchy levels?
 
-This is useful for focusing on relevant geographic information based on your event scope.
+Use the block's dual-range control:
+* Continent only: Levels 1-1
+* Country through City: Levels 2-4
+* City and Street: Levels 4-5
+* Full hierarchy: Levels 1-7 (or use default 1-999)
 
-### Can I link the location terms to archive pages?
+### Can I customize block appearance?
 
-Yes, enable the "Enable term links" toggle in the block settings. Each location term will become a clickable link to its WordPress archive page, where visitors can see all events in that location. Standard WordPress taxonomy archive pages are automatically created for each location term.
-
-### How do I filter events by location?
-
-Since location data is stored as a standard WordPress taxonomy, you can:
-* Use WordPress's built-in taxonomy queries
-* Filter in the admin with the location column
-* Create custom queries using `WP_Query` with `tax_query`
-* Use WordPress archive URLs (e.g., `/location/europe/germany/`)
-* Build custom filtering interfaces with WordPress REST API
-
-### Does this work with block themes?
-
-Yes, the plugin is fully compatible with block themes and the block editor. The display block follows WordPress block standards and supports all standard block features (alignment, colors, spacing, etc.).
-
-### Is the plugin translation-ready?
-
-Yes, the plugin uses WordPress internationalization best practices. Continent names use WordPress core translations, and all plugin strings are translatable. The text domain is 'gatherpress-venue-hierarchy'.
-
-### Can I customize the block styling?
-
-Yes, the block supports WordPress's color system (text, background, and link colors) and standard block features. You can also add custom CSS targeting the `.wp-block-telex-block-gatherpress-venue-hierarchy` class.
+The block supports WordPress color controls (text, background, link). Custom CSS can target `.wp-block-telex-block-gatherpress-venue-hierarchy` class.
 
 ### Does this affect performance?
 
-The plugin is designed with performance in mind:
-* API responses are cached for one hour
+Performance considerations:
+* API calls only occur when events are saved (not on page load)
+* 1-hour caching reduces API requests
 * Singleton pattern prevents duplicate queries
-* Only geocodes when events are saved, not on page load
-* Uses standard WordPress taxonomy queries (fast and optimized)
+* Standard WordPress taxonomy queries (optimized)
 * No frontend JavaScript required
 
 ## Screenshots
 
-1. Admin settings page for configuring default geographic terms
-2. Event editor showing the Location Hierarchy Display block with level range control
-3. Location Hierarchy Display block with dual-handle range slider for selecting levels
-4. Frontend display of location hierarchy as inline text
-5. Location taxonomy in admin sidebar menu showing hierarchical structure
-6. Event list in admin with location hierarchy column
-7. Block inspector controls for links and venue display options
+1. Settings page for default geographic terms
+2. Block editor showing dual-range level control
+3. Block inspector with display options
+4. Frontend display with linked terms
+5. Location taxonomy in WordPress admin
+6. Event list with location hierarchy column
+7. Staggered label layout in dual-range control
 
 ## Changelog
 
 ### 0.1.0
 * Initial release
-* New hierarchical gatherpress-location taxonomy with five levels (continent through city)
-* Nominatim OpenStreetMap API integration for automatic geocoding
-* Geographic term hierarchy generation with proper parent-child relationships
-* One-hour transient caching for API responses
-* Admin settings panel for default geographic terms
-* Custom Gutenberg block for displaying location hierarchies
-* Dual-handle range control for selecting hierarchy levels to display
-* Optional clickable links to location archive pages
-* Optional venue name display with link support
-* Enhanced support for German-speaking regions
-* Comprehensive error handling and logging
-* Full WordPress color support in block
+* Hierarchical gatherpress-location taxonomy (7 levels)
+* Nominatim API integration with 1-hour caching
+* Automatic term creation with parent relationships
+* Country-to-continent mapping with WordPress i18n
+* Gutenberg block with dual-range level control
+* Customizable separator between terms
+* Optional term links to archive pages
+* Optional venue display with link support
+* Enhanced German-speaking region support
+* Street and street number handling
+* Combined street+number display option
+* Staggered label layout for 7-level range control
 * REST API integration
-* PHPStan-compatible type hints and extensive documentation
-* Singleton pattern implementation for performance
-* Translation-ready with WordPress core continent translations
-
-## Upgrade Notice
-
-### 0.1.0
-Initial release of GatherPress Venue Hierarchy. Requires GatherPress plugin to be installed and activated.
+* PHPStan-compatible type hints
+* Comprehensive docblocks
+* Singleton pattern implementation
 
 ## Developer Documentation
 
-### Programmatic Access
+### Data Structure
 
-Access location data using standard WordPress taxonomy functions:
+**Taxonomy:**
+* Name: gatherpress-location
+* Hierarchical: true
+* Post types: gatherpress_event
+* REST API: enabled
+* URL structure: /location/{term}/{child-term}/
 
+**Location Data Array:**
 ```php
-// Get all location terms for an event
-$locations = wp_get_object_terms( $event_id, 'gatherpress-location' );
+array(
+    'continent'      => string, // e.g., "Europe"
+    'country'        => string, // e.g., "Germany"
+    'country_code'   => string, // e.g., "de"
+    'state'          => string, // e.g., "Bavaria"
+    'city'           => string, // e.g., "Munich"
+    'street'         => string, // e.g., "Marienplatz"
+    'street_number'  => string, // e.g., "1"
+)
+```
 
-// Query events in a specific country
+### Class Architecture
+
+**GatherPress_Venue_Hierarchy** (Singleton)
+* Registers taxonomy and block
+* Hooks into save_post_gatherpress_event (priority 20)
+* Manages settings page
+* Coordinates geocoding and hierarchy building
+
+**GatherPress_Venue_Geocoder** (Singleton)
+* Handles Nominatim API communication
+* Manages transient caching
+* Parses API responses
+* Maps countries to continents
+
+**GatherPress_Venue_Hierarchy_Builder** (Singleton)
+* Creates taxonomy terms
+* Establishes parent-child relationships
+* Updates incorrect parent assignments
+* Associates terms with events
+
+**GatherPress_Venue_Hierarchy_Block_Renderer** (Singleton)
+* Renders block on frontend
+* Retrieves location terms
+* Builds hierarchical paths
+* Formats output with optional links
+
+### Code Examples
+
+**Get all location terms for an event:**
+```php
+$terms = wp_get_object_terms(
+    $event_id,
+    'gatherpress-location',
+    array( 'orderby' => 'parent', 'order' => 'ASC' )
+);
+```
+
+**Query events in a specific country:**
+```php
 $events = new WP_Query( array(
     'post_type' => 'gatherpress_event',
     'tax_query' => array(
@@ -294,23 +283,30 @@ $events = new WP_Query( array(
 ) );
 ```
 
-### Filters and Hooks
+**Get hierarchical term path:**
+```php
+$term = get_term_by( 'slug', 'munich', 'gatherpress-location' );
+$path = array();
+$current = $term;
+while ( $current ) {
+    array_unshift( $path, $current->name );
+    $current = $current->parent ? get_term( $current->parent ) : null;
+}
+// Result: ['Europe', 'Germany', 'Bavaria', 'Munich']
+```
 
-The plugin uses standard WordPress hooks. Future versions may add custom filters.
+### Extending Functionality
 
-### Code Architecture
-
-* **Main Plugin Class** - `GatherPress_Venue_Hierarchy` (Singleton) - Coordinates all functionality
-* **Geocoder Class** - `GatherPress_Venue_Geocoder` (Singleton) - Handles API communication
-* **Hierarchy Builder Class** - `GatherPress_Venue_Hierarchy_Builder` (Singleton) - Manages term creation
-* **Block Renderer Class** - `GatherPress_Venue_Hierarchy_Block_Renderer` (Singleton) - Handles frontend display
-
-### Contributing
-
-This plugin is open source and welcomes contributions. Please follow WordPress coding standards and include PHPStan-compatible type hints and comprehensive docblocks.
+The plugin uses WordPress hooks and standard taxonomy functions. Custom functionality can be added using standard WordPress filters and actions. All classes use singleton pattern with private constructors.
 
 ## Privacy
 
-This plugin communicates with the Nominatim API (OpenStreetMap) to geocode venue addresses. When you save an event with a venue address, that address is sent to Nominatim's servers. Please review OpenStreetMap's privacy policy. No personal data is sent to external services - only venue addresses from your events.
+This plugin sends venue addresses to Nominatim API (https://nominatim.openstreetmap.org) when events are saved. Only venue addresses are transmitted. No user data or personal information is sent.
 
-Geocoding results are cached locally in your WordPress database using WordPress transients. No data is sent to any service other than Nominatim, and only when explicitly saving an event with a venue address.
+Geocoding results are cached locally in the WordPress database using transients (1-hour expiration). No data is sent to services other than Nominatim.
+
+Review OpenStreetMap's privacy policy at: https://wiki.osmfoundation.org/wiki/Privacy_Policy
+
+## Credits
+
+This plugin uses the Nominatim API provided by OpenStreetMap Foundation. Nominatim is licensed under GPL v2.

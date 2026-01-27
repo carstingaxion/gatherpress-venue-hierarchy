@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, Spinner } from '@wordpress/components';
+import { PanelBody, ToggleControl, TextControl, Spinner } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
@@ -34,7 +34,18 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 	const [ isDragging, setIsDragging ] = useState( null );
 	const [ trackRef, setTrackRef ] = useState( null );
 	
+	// Use abbreviated labels for better spacing with 7 levels
 	const levelLabels = [
+		__( 'Cont.', 'gatherpress-venue-hierarchy' ),
+		__( 'Country', 'gatherpress-venue-hierarchy' ),
+		__( 'State', 'gatherpress-venue-hierarchy' ),
+		__( 'City', 'gatherpress-venue-hierarchy' ),
+		__( 'Street', 'gatherpress-venue-hierarchy' ),
+		__( 'Number', 'gatherpress-venue-hierarchy' ),
+	];
+	
+	// Full labels for the output display
+	const fullLevelLabels = [
 		__( 'Continent', 'gatherpress-venue-hierarchy' ),
 		__( 'Country', 'gatherpress-venue-hierarchy' ),
 		__( 'State', 'gatherpress-venue-hierarchy' ),
@@ -143,11 +154,11 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 					{ __( 'Showing:', 'gatherpress-venue-hierarchy' ) }
 				</span>
 				<strong>
-					{ levelLabels[ startLevel - 1 ] || '' }
+					{ fullLevelLabels[ startLevel - 1 ] || '' }
 					{ startLevel !== endLevel && (
 						<>
 							{ ' ' + __( 'to', 'gatherpress-venue-hierarchy' ) + ' ' }
-							{ levelLabels[ endLevel - 1 ] || '' }
+							{ fullLevelLabels[ endLevel - 1 ] || '' }
 						</>
 					) }
 				</strong>
@@ -165,26 +176,69 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
  * @return {Element} Element to render.
  */
 export default function Edit( { attributes, setAttributes, context } ) {
-	const { startLevel, endLevel, enableLinks, showVenue } = attributes;
+	const { startLevel, endLevel, enableLinks, showVenue, separator } = attributes;
 	const [ locationHierarchy, setLocationHierarchy ] = useState( '' );
-	const [ venueName, setVenueName ] = useState( '' );
 	const [ maxDepth, setMaxDepth ] = useState( 7 );
 	const [ isLoading, setIsLoading ] = useState( true );
-	const [ error, setError ] = useState( null );
 	
-	// Get the current post ID from the editor store
-	const currentPostId = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPostId();
-	}, [] );
+	// Get the current post ID from context or editor store
+	const postId = useSelect( ( select ) => {
+		return context.postId || select( 'core/editor' )?.getCurrentPostId();
+	}, [ context.postId ] );
 	
-	// Get the current post type from the editor store
-	const currentPostType = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPostType();
-	}, [] );
+	// Get the current post type from context or editor store
+	const postType = useSelect( ( select ) => {
+		return context.postType || select( 'core/editor' )?.getCurrentPostType();
+	}, [ context.postType ] );
 	
-	// Use context values as fallback, but prefer the editor store values
-	const postId = currentPostId || context.postId;
-	const postType = currentPostType || context.postType;
+	// Get location terms using useSelect
+	const locationTerms = useSelect(
+		( select ) => {
+			if ( ! postId ) {
+				return [];
+			}
+			
+			// Query for taxonomy terms associated with this post
+			return select( 'core' ).getEntityRecords(
+				'taxonomy',
+				'gatherpress-location',
+				{
+					post: postId,
+					per_page: 100,
+					// orderby: 'parent',
+					orderby: 'id',
+					order: 'asc',
+				}
+			) || [];
+		},
+		[ postId ]
+	);
+	
+	// Get venue name from _gatherpress_venue taxonomy term
+	const venueName = useSelect(
+		( select ) => {
+			if ( ! postId || ! showVenue ) {
+				return '';
+			}
+			
+			// Get the venue terms for this event
+			const venueTerms = select( 'core' ).getEntityRecords(
+				'taxonomy',
+				'_gatherpress_venue',
+				{
+					post: postId,
+					per_page: 1,
+				}
+			);
+			
+			if ( ! venueTerms || venueTerms.length === 0 ) {
+				return '';
+			}
+			
+			return venueTerms[0]?.name || '';
+		},
+		[ postId, showVenue ]
+	);
 	
 	// Check if we're in a GatherPress event context
 	if ( postType && postType !== 'gatherpress_event' ) {
@@ -195,6 +249,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 		);
 	}
 	
+	// Build location hierarchy when terms change
 	useEffect( () => {
 		if ( ! postId ) {
 			setLocationHierarchy( __( 'No post ID available', 'gatherpress-venue-hierarchy' ) );
@@ -202,41 +257,22 @@ export default function Edit( { attributes, setAttributes, context } ) {
 			return;
 		}
 		
-		const fetchLocationData = async () => {
+		const buildHierarchy = async () => {
 			try {
 				setIsLoading( true );
-				setError( null );
 				
-				// Fetch terms directly via REST API
-				const terms = await apiFetch( {
-					path: `/wp/v2/gatherpress-location?post=${ postId }&per_page=100`,
-				} );
-				
-				// Fetch event data to get venue information
-				let eventVenueName = '';
-				try {
-					const event = await apiFetch( {
-						path: `/wp/v2/gatherpress_event/${ postId }`,
-					} );
-					
-					if ( event && event.venue ) {
-						eventVenueName = event.venue.name || '';
-					}
-				} catch ( venueError ) {
-					console.log( 'Could not fetch venue information:', venueError );
-				}
-				
-				setVenueName( eventVenueName );
-				
-				if ( ! terms || terms.length === 0 ) {
-					if ( showVenue && eventVenueName ) {
-						setLocationHierarchy( eventVenueName );
+				// If no location terms
+				if ( ! locationTerms || locationTerms.length === 0 ) {
+					if ( showVenue && venueName ) {
+						setLocationHierarchy( venueName );
 					} else {
 						setLocationHierarchy( __( 'No location hierarchy available for this event', 'gatherpress-venue-hierarchy' ) );
 					}
 					setIsLoading( false );
 					return;
 				}
+				
+				const terms = locationTerms;
 				
 				const buildTermPath = ( term, allTerms ) => {
 					const path = [];
@@ -275,30 +311,29 @@ export default function Edit( { attributes, setAttributes, context } ) {
 						return '';
 					}
 					
-					return path.slice( actualStartLevel - 1, actualEndLevel ).join( ' > ' );
+					return path.slice( actualStartLevel - 1, actualEndLevel ).join( separator );
 				} ).filter( path => path !== '' );
 				
 				if ( filteredPaths.length > 0 ) {
 					let hierarchyText = filteredPaths.join( ', ' );
 					
 					// Add venue name if requested and available
-					if ( showVenue && eventVenueName ) {
-						hierarchyText += ' > ' + eventVenueName;
+					if ( showVenue && venueName ) {
+						hierarchyText += separator + venueName;
 					}
 					
 					setLocationHierarchy( hierarchyText );
 				} else {
 					// If no filtered paths but venue is requested, show just venue
-					if ( showVenue && eventVenueName ) {
-						setLocationHierarchy( eventVenueName );
+					if ( showVenue && venueName ) {
+						setLocationHierarchy( venueName );
 					} else {
 						setLocationHierarchy( __( 'No location hierarchy available at selected levels', 'gatherpress-venue-hierarchy' ) );
 					}
 				}
 				setIsLoading( false );
 			} catch ( err ) {
-				console.error( 'Error fetching location data:', err );
-				setError( err.message || 'Unknown error' );
+				console.error( 'Error building location hierarchy:', err );
 				
 				// Even on error, try to show venue if requested
 				if ( showVenue && venueName ) {
@@ -310,16 +345,8 @@ export default function Edit( { attributes, setAttributes, context } ) {
 			}
 		};
 		
-		fetchLocationData();
-	}, [ postId, startLevel, endLevel, showVenue ] );
-	
-	if ( error ) {
-		return (
-			<p { ...useBlockProps() }>
-				{ __( 'Error: ', 'gatherpress-venue-hierarchy' ) } { error }
-			</p>
-		);
-	}
+		buildHierarchy();
+	}, [ postId, locationTerms, startLevel, endLevel, showVenue, venueName, separator ] );
 	
 	return (
 		<>
@@ -344,6 +371,12 @@ export default function Edit( { attributes, setAttributes, context } ) {
 					title={ __( 'Display Options', 'gatherpress-venue-hierarchy' ) }
 					initialOpen={ true }
 				>
+					<TextControl
+						label={ __( 'Separator', 'gatherpress-venue-hierarchy' ) }
+						help={ __( 'Character(s) to display between location terms', 'gatherpress-venue-hierarchy' ) }
+						value={ separator }
+						onChange={ ( value ) => setAttributes( { separator: value } ) }
+					/>
 					<ToggleControl
 						label={ __( 'Show venue', 'gatherpress-venue-hierarchy' ) }
 						help={ __( 'Display the venue name at the end of the location hierarchy', 'gatherpress-venue-hierarchy' ) }

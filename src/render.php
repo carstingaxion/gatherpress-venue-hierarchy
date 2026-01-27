@@ -89,7 +89,7 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 		 *
 		 * **How:**
 		 * 1. Validates post ID and post type (must be gatherpress_event)
-		 * 2. Extracts block attributes (startLevel, endLevel, enableLinks, showVenue)
+		 * 2. Extracts block attributes (startLevel, endLevel, enableLinks, showVenue, separator)
 		 * 3. Optionally retrieves venue information from GatherPress Event class
 		 * 4. Queries location terms for the event
 		 * 5. Builds hierarchical paths via build_hierarchy_paths()
@@ -141,6 +141,8 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 			$end_level = isset( $attributes['endLevel'] ) ? absint( $attributes['endLevel'] ) : 999;
 			$enable_links = isset( $attributes['enableLinks'] ) ? (bool) $attributes['enableLinks'] : false;
 			$show_venue = isset( $attributes['showVenue'] ) ? (bool) $attributes['showVenue'] : false;
+			// Preserve whitespace by using wp_kses_post instead of sanitize_text_field
+			$separator = isset( $attributes['separator'] ) ? wp_kses_post( $attributes['separator'] ) : ' > ';
 			
 			// Ensure start level is at least 1
 			$start_level = max( 1, $start_level );
@@ -177,7 +179,7 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 				
 				// If showing venue and we have venue info, show just the venue
 				if ( $show_venue && $venue_name ) {
-					return $this->render_output( $venue_name, $venue_link, $enable_links );
+					return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 				}
 				
 				return '';
@@ -186,19 +188,19 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 			if ( empty( $location_terms ) ) {
 				// If showing venue and we have venue info, show just the venue
 				if ( $show_venue && $venue_name ) {
-					return $this->render_output( $venue_name, $venue_link, $enable_links );
+					return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 				}
 				
 				return '';
 			}
 			
 			// Build hierarchy paths
-			$hierarchy_paths = $this->build_hierarchy_paths( $location_terms, $start_level, $end_level, $enable_links );
+			$hierarchy_paths = $this->build_hierarchy_paths( $location_terms, $start_level, $end_level, $enable_links, $separator );
 			
 			if ( empty( $hierarchy_paths ) ) {
 				// If showing venue and we have venue info, show just the venue
 				if ( $show_venue && $venue_name ) {
-					return $this->render_output( $venue_name, $venue_link, $enable_links );
+					return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 				}
 				
 				return '';
@@ -219,7 +221,8 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 					$venue_text = esc_html( $venue_name );
 				}
 				
-				$hierarchy_text .= ' > ' . $venue_text;
+				// Use the separator directly without escaping to preserve whitespace
+				$hierarchy_text .= $separator . $venue_text;
 			}
 			
 			// Get block wrapper attributes
@@ -248,9 +251,10 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 		 * @param string $venue_name  Venue name to display.
 		 * @param string $venue_link  Venue permalink (optional, empty string if not available).
 		 * @param bool   $enable_links Whether to link the venue.
+		 * @param string $separator   Separator string (unused in this method).
 		 * @return string Rendered block HTML.
 		 */
-		private function render_output( string $venue_name, string $venue_link, bool $enable_links ): string {
+		private function render_output( string $venue_name, string $venue_link, bool $enable_links, string $separator ): string {
 			$wrapper_attributes = get_block_wrapper_attributes();
 			
 			if ( $enable_links && $venue_link ) {
@@ -290,12 +294,12 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 		 *    - Uses array_slice() to extract relevant portion
 		 *    - Example: Full path [Europe, Germany, Bavaria, Munich], levels 2-3
 		 *      Result: [Germany, Bavaria]
-		 * 4. Joins filtered paths with ' > ' separator
+		 * 4. Joins filtered paths with custom separator
 		 * 5. Returns array of formatted path strings
 		 *
 		 * Example:
 		 * Input terms: Europe(0), Germany(1), Bavaria(2), Munich(3)
-		 * Input levels: start=1, end=3
+		 * Input levels: start=1, end=3, separator=" > "
 		 * Output: ["Europe > Germany > Bavaria"]
 		 *
 		 * @since 0.1.0
@@ -303,9 +307,10 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 		 * @param int            $start_level  Starting hierarchy level (1-based, 1=continent).
 		 * @param int            $end_level    Ending hierarchy level (1-based, 5=street).
 		 * @param bool           $enable_links Whether to wrap terms in archive links.
+		 * @param string         $separator    Separator string to use between terms.
 		 * @return array<string> Array of formatted hierarchy path strings.
 		 */
-		private function build_hierarchy_paths( array $terms, int $start_level, int $end_level, bool $enable_links ): array {
+		private function build_hierarchy_paths( array $terms, int $start_level, int $end_level, bool $enable_links, string $separator ): array {
 			if ( empty( $terms ) ) {
 				return array();
 			}
@@ -356,7 +361,8 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 				$filtered_path = array_slice( $full_path, $start_index, $end_index - $start_index );
 				
 				if ( ! empty( $filtered_path ) ) {
-					$hierarchy_paths[] = implode( ' > ', $filtered_path );
+					// Use the separator directly without escaping to preserve whitespace
+					$hierarchy_paths[] = implode( $separator, $filtered_path );
 				}
 			}
 			

@@ -6,7 +6,7 @@
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
- * Author:            WordPress Telex
+ * Author:            carstenbach
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       gatherpress-venue-hierarchy
@@ -150,6 +150,10 @@ class GatherPress_Venue_Hierarchy {
 	 * @return void
 	 */
 	public function register_location_taxonomy(): void {
+		$settings     = \GatherPress\Core\Settings::get_instance();
+		$events_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+
 		$labels = array(
 			'name'                       => __( 'Locations', 'gatherpress-venue-hierarchy' ),
 			'singular_name'              => __( 'Location', 'gatherpress-venue-hierarchy' ),
@@ -177,7 +181,8 @@ class GatherPress_Venue_Hierarchy {
 			'show_tagcloud'              => true,
 			'show_in_rest'               => true,
 			'rewrite'                    => array(
-				'slug' => 'location',
+				// 'slug' => 'location',
+				'slug' => $events_slug . '/in',
 				'hierarchical' => true,
 			),
 			'sort'                       => true,
