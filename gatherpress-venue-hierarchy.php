@@ -238,9 +238,11 @@ class GatherPress_Venue_Hierarchy {
 		$wp_term_query_args            = array();
 		$wp_term_query_args['orderby'] = 'parent';
 		$wp_term_query_args['order']   = 'ASC';
-
-		$settings      = \GatherPress\Core\Settings::get_instance();
-		$events_slug   = $settings->get_value( 'general', 'urls', 'events' );
+		
+		if ( class_exists( 'GatherPress\Core\Settings' ) ) {
+			$settings      = \GatherPress\Core\Settings::get_instance();
+			$events_slug   = $settings->get_value( 'general', 'urls', 'events' );
+		}
 		$events_slug   = ! empty( $events_slug ) ? $events_slug  : '';
 		$location_slug = $events_slug . '/in';
 
