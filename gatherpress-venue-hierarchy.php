@@ -93,41 +93,104 @@ class GatherPress_Venue_Hierarchy {
 	 * they're active when WordPress processes its action/filter queues.
 	 *
 	 * **How:** Adds action/filter callbacks for:
-	 * - init: Register taxonomy and block
+	 * - init (priority 5): Register taxonomy EARLY to prevent rewrite rule conflicts
+	 * - init (priority 10): Register block at default priority
 	 * - admin_menu: Add settings page
 	 * - admin_init: Register settings
 	 * - save_post_gatherpress_event (priority 20): Trigger geocoding after event save
 	 * - enqueue_block_editor_assets: Localize script with filter data
+	 * - wp_head (priority 1): Add canonical tags for taxonomy archives
 	 *
+	 * Priority 5 for taxonomy registration ensures it runs before WordPress's default
+	 * rewrite rules (priority 10), preventing attachment rule conflicts.
 	 * Priority 20 ensures GatherPress core has saved venue data first (default priority 10).
+	 * Priority 1 for wp_head ensures canonical tags appear early in <head>.
 	 *
 	 * @since 0.1.0
 	 */
 	private function __construct() {
-		add_action( 'init', array( $this, 'init' ) );
+		// Register taxonomy early (priority 5) to prevent rewrite rule conflicts
+		add_action( 'init', array( $this, 'register_location_taxonomy' ), 5 );
+		// Register block at default priority
+		add_action( 'init', array( $this, 'register_block' ), 10 );
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'save_post_gatherpress_event', array( $this, 'maybe_geocode_event_venue' ), 20, 2 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'localize_block_editor_script' ) );
+		// Add canonical URL handling for taxonomy archives
+		add_action( 'wp_head', array( $this, 'add_canonical_for_single_child_terms' ), 1 );
 	}
 	
 	/**
-	 * Initialize plugin.
+	 * Add canonical URL for terms with only one child.
 	 *
-	 * **What:** Registers the location taxonomy and block type with WordPress.
+	 * **What:** Adds canonical link tag to taxonomy archive pages when a term has only one child,
+	 * pointing to the child term's archive to consolidate SEO value.
 	 *
-	 * **Why:** Must run on 'init' hook (earliest point WordPress allows taxonomy/block registration)
-	 * to ensure taxonomy is available for queries and block is available in the editor.
+	 * **Why:** When a parent term has only one child, both archives show identical events,
+	 * creating duplicate content issues. Canonical tags tell search engines which URL is
+	 * the preferred version, consolidating ranking signals and preventing dilution.
 	 *
-	 * **How:** Calls register_location_taxonomy() to define the hierarchical taxonomy structure,
-	 * then register_block() to make the display block available in Gutenberg.
+	 * **How:**
+	 * 1. Checks if we're on a location taxonomy archive page
+	 * 2. Gets the current queried term
+	 * 3. Queries for direct children of this term
+	 * 4. If exactly one child exists:
+	 *    - Gets the child term's archive URL
+	 *    - Outputs canonical link tag pointing to child
+	 * 5. This creates a chain: grandparent → parent → child (leaf)
+	 *    Each level canonicals to its single child until reaching the leaf
+	 *
+	 * Example scenario:
+	 * - Europe has only Germany as child
+	 * - Germany has only Berlin as child
+	 * - Berlin has 5 events
+	 * Result:
+	 * - /location/europe/ shows: <link rel="canonical" href="/location/europe/germany/" />
+	 * - /location/europe/germany/ shows: <link rel="canonical" href="/location/europe/germany/berlin/" />
+	 * - /location/europe/germany/berlin/ is canonical (no tag needed)
 	 *
 	 * @since 0.1.0
 	 * @return void
 	 */
-	public function init(): void {
-		$this->register_location_taxonomy();
-		$this->register_block();
+	public function add_canonical_for_single_child_terms(): void {
+		// Only run on location taxonomy archives
+		if ( ! is_tax( $this->taxonomy ) ) {
+			return;
+		}
+		
+		$current_term = get_queried_object();
+		
+		if ( ! $current_term instanceof \WP_Term ) {
+			return;
+		}
+		
+		// Get direct children of this term
+		$child_terms = get_terms(
+			array(
+				'taxonomy'   => $this->taxonomy,
+				'parent'     => $current_term->term_id,
+				'hide_empty' => false,
+				'number'     => 2, // Only need to know if there's 1 or more
+			)
+		);
+		
+		if ( is_wp_error( $child_terms ) ) {
+			return;
+		}
+		
+		// If exactly one child exists, add canonical to that child
+		if ( count( $child_terms ) === 1 ) {
+			$child_term = $child_terms[0];
+			$child_url = get_term_link( $child_term );
+			
+			if ( ! is_wp_error( $child_url ) ) {
+				printf(
+					'<link rel="canonical" href="%s" />' . "\n",
+					esc_url( $child_url )
+				);
+			}
+		}
 	}
 	
 	/**
@@ -206,7 +269,7 @@ class GatherPress_Venue_Hierarchy {
 	 * **What:** Creates a hierarchical taxonomy for organizing venues by geographical location.
 	 *
 	 * **Why:** WordPress's default taxonomy system requires explicit registration before use.
-	 * Hierarchical structure allows parent-child relationships (Europe > Germany > Bavaria > Munich > Main St > 123),
+	 * Hierarchical structure allows parent-child relationships (Europe > Germany > Bavaria > Munich),
 	 * enabling filtering at any level and proper breadcrumb-style display.
 	 *
 	 * **How:** Uses register_taxonomy() with carefully configured args:
@@ -217,6 +280,9 @@ class GatherPress_Venue_Hierarchy {
 	 *
 	 * The 'args' parameter contains WP_Term_Query args that control how terms are retrieved
 	 * globally, ensuring consistent hierarchical ordering throughout WordPress.
+	 *
+	 * Registered at priority 5 (early) to ensure rewrite rules are processed before WordPress's
+	 * default attachment rules, preventing URL conflicts.
 	 *
 	 * @since 0.1.0
 	 * @return void
