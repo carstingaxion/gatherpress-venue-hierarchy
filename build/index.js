@@ -32,11 +32,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./editor.scss */ "./src/editor.scss");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./editor.scss */ "./src/editor.scss");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
 /**
  * Retrieves the translation of text.
  *
@@ -50,7 +48,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-
 
 
 
@@ -74,26 +71,34 @@ __webpack_require__.r(__webpack_exports__);
 function DualRangeControl({
   startLevel,
   endLevel,
+  minLevel,
   maxLevel,
   onChange
 }) {
   const [isDragging, setIsDragging] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
   const [trackRef, setTrackRef] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
 
-  // Use abbreviated labels for better spacing with 7 levels
-  const levelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Cont.', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Street', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number', 'gatherpress-venue-hierarchy')];
+  // Use abbreviated labels for better spacing
+  const allLevelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Cont.', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Str.', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Nr.', 'gatherpress-venue-hierarchy')];
 
   // Full labels for the output display
-  const fullLevelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Continent', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Street', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number', 'gatherpress-venue-hierarchy')];
+  const allFullLevelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Continent', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Street', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number', 'gatherpress-venue-hierarchy')];
+
+  // Filter labels to only show allowed range
+  const levelLabels = allLevelLabels.slice(minLevel - 1, maxLevel);
+  const fullLevelLabels = allFullLevelLabels.slice(minLevel - 1, maxLevel);
+  const effectiveMaxLevel = maxLevel - minLevel;
   const getPositionFromLevel = level => {
-    return (level - 1) / (maxLevel - 1) * 100;
+    const adjustedLevel = level - minLevel + 1;
+    return (adjustedLevel - 1) / (effectiveMaxLevel - 1) * 100;
   };
   const getLevelFromPosition = clientX => {
-    if (!trackRef) return 1;
+    if (!trackRef) return minLevel;
     const rect = trackRef.getBoundingClientRect();
     const position = (clientX - rect.left) / rect.width;
-    const level = Math.round(position * (maxLevel - 1)) + 1;
-    return Math.max(1, Math.min(maxLevel, level));
+    const adjustedLevel = Math.round(position * (effectiveMaxLevel - 1)) + 1;
+    const level = adjustedLevel + minLevel - 1;
+    return Math.max(minLevel, Math.min(maxLevel, level));
   };
   const handleMouseDown = handle => e => {
     e.preventDefault();
@@ -133,26 +138,32 @@ function DualRangeControl({
   }, [isDragging, startLevel, endLevel]);
   const startPos = getPositionFromLevel(startLevel);
   const endPos = getPositionFromLevel(endLevel);
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)("div", {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
     className: "dual-range-control",
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("div", {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
       className: "dual-range-control__labels",
-      children: levelLabels.slice(0, maxLevel).map((label, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("span", {
+      style: {
+        gridTemplateColumns: `repeat(${effectiveMaxLevel}, 1fr)`
+      },
+      children: levelLabels.map((label, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("span", {
         className: "dual-range-control__label",
+        style: {
+          left: `calc(${index} * (100% / ${effectiveMaxLevel}) + 8px)`
+        },
         children: label
       }, index))
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("div", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
       className: "dual-range-control__track-container",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
         ref: setTrackRef,
         className: "dual-range-control__track",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
           className: "dual-range-control__range",
           style: {
             left: `${startPos}%`,
             width: `${endPos - startPos}%`
           }
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("button", {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("button", {
           type: "button",
           className: `dual-range-control__handle dual-range-control__handle--start ${isDragging === 'start' ? 'is-dragging' : ''}`,
           style: {
@@ -160,7 +171,7 @@ function DualRangeControl({
           },
           onMouseDown: handleMouseDown('start'),
           "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Start level', 'gatherpress-venue-hierarchy')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("button", {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("button", {
           type: "button",
           className: `dual-range-control__handle dual-range-control__handle--end ${isDragging === 'end' ? 'is-dragging' : ''}`,
           style: {
@@ -170,14 +181,14 @@ function DualRangeControl({
           "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('End level', 'gatherpress-venue-hierarchy')
         })]
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)("div", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
       className: "dual-range-control__output",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("span", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("span", {
         className: "dual-range-control__output-label",
         children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Showing:', 'gatherpress-venue-hierarchy')
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)("strong", {
-        children: [fullLevelLabels[startLevel - 1] || '', startLevel !== endLevel && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.Fragment, {
-          children: [' ' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('to', 'gatherpress-venue-hierarchy') + ' ', fullLevelLabels[endLevel - 1] || '']
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("strong", {
+        children: [fullLevelLabels[startLevel - minLevel] || '', startLevel !== endLevel && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [' ' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('to', 'gatherpress-venue-hierarchy') + ' ', fullLevelLabels[endLevel - minLevel] || '']
         })]
       })]
     })]
@@ -205,18 +216,28 @@ function Edit({
     separator
   } = attributes;
   const [locationHierarchy, setLocationHierarchy] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)('');
-  const [maxDepth, setMaxDepth] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(7);
   const [isLoading, setIsLoading] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(true);
 
-  // Get the current post ID from context or editor store
-  const postId = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
-    return context.postId || select('core/editor')?.getCurrentPostId();
-  }, [context.postId]);
+  // Get allowed levels from localized script data
+  const allowedLevels = window.gatherPressVenueHierarchy?.allowedLevels || {
+    min: 1,
+    max: 7
+  };
+  const minLevel = allowedLevels.min;
+  const maxLevel = allowedLevels.max;
 
-  // Get the current post type from context or editor store
-  const postType = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
-    return context.postType || select('core/editor')?.getCurrentPostType();
-  }, [context.postType]);
+  // Get the current post ID from context (works for both direct post and query loop)
+  const postId = context.postId || (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
+    return select('core/editor')?.getCurrentPostId();
+  }, []);
+
+  // Get the current post type from context (works for both direct post and query loop)
+  const postType = context.postType || (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
+    return select('core/editor')?.getCurrentPostType();
+  }, []);
+
+  // Detect if we're in a query loop context
+  const isInQueryLoop = !!context.queryId;
 
   // Get location terms using useSelect
   const locationTerms = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
@@ -228,7 +249,6 @@ function Edit({
     return select('core').getEntityRecords('taxonomy', 'gatherpress-location', {
       post: postId,
       per_page: 100,
-      // orderby: 'parent',
       orderby: 'id',
       order: 'asc'
     }) || [];
@@ -265,7 +285,7 @@ function Edit({
 
   // Check if we're in a GatherPress event context
   if (postType && postType !== 'gatherpress_event') {
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("p", {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
       children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This block must be used within a GatherPress event', 'gatherpress-venue-hierarchy')
     });
@@ -287,12 +307,17 @@ function Edit({
           if (showVenue && venueName) {
             // Format venue with link if enabled
             if (enableLinks && venueLink) {
-              setLocationHierarchy(`<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link">${venueName}</a>`);
+              setLocationHierarchy(`<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault()" >${venueName}</a>`);
             } else {
               setLocationHierarchy(venueName);
             }
           } else {
-            setLocationHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for this event', 'gatherpress-venue-hierarchy'));
+            if (isInQueryLoop) {
+              // In query loop, show a placeholder instead of error
+              setLocationHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Location hierarchy will display here', 'gatherpress-venue-hierarchy'));
+            } else {
+              setLocationHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for this event', 'gatherpress-venue-hierarchy'));
+            }
           }
           setIsLoading(false);
           return;
@@ -305,7 +330,7 @@ function Edit({
             // For editor preview, wrap in link if enabled
             if (enableLinks) {
               const termLink = currentTerm.link || '#';
-              path.unshift(`<a href="${termLink}" class="gatherpress-location-link">${currentTerm.name}</a>`);
+              path.unshift(`<a href="${termLink}" class="gatherpress-location-link" onclick="event.preventDefault()" >${currentTerm.name}</a>`);
             } else {
               path.unshift(currentTerm.name);
             }
@@ -324,18 +349,23 @@ function Edit({
         const leafTerms = terms.filter(term => !parentIds.includes(term.id));
         const hierarchyPaths = leafTerms.map(term => buildTermPath(term, terms));
 
-        // Calculate the maximum depth
-        const calculatedMaxDepth = Math.max(...hierarchyPaths.map(path => path.length));
-        setMaxDepth(Math.min(calculatedMaxDepth, 7)); // Cap at 7 levels
-
         // Filter paths based on start and end levels
+        // Account for the allowed level range offset
         const filteredPaths = hierarchyPaths.map(path => {
-          const actualStartLevel = Math.max(1, startLevel);
-          const actualEndLevel = Math.min(endLevel, path.length);
-          if (actualStartLevel > path.length) {
+          // Calculate actual indices based on absolute levels
+          // startLevel and endLevel are absolute (1-7), but path is only the terms that exist
+          // We need to find which absolute levels correspond to which path indices
+
+          // The path always starts from the root term (lowest allowed level in this case)
+          // and goes down to the leaf term
+          // So path[0] corresponds to minLevel, path[1] to minLevel+1, etc.
+
+          const actualStartIndex = Math.max(0, startLevel - minLevel);
+          const actualEndIndex = Math.min(path.length, endLevel - minLevel + 1);
+          if (actualStartIndex >= path.length) {
             return '';
           }
-          return path.slice(actualStartLevel - 1, actualEndLevel).join(separator);
+          return path.slice(actualStartIndex, actualEndIndex).join(separator);
         }).filter(path => path !== '');
         if (filteredPaths.length > 0) {
           let hierarchyText = filteredPaths.join(', ');
@@ -344,7 +374,7 @@ function Edit({
           if (showVenue && venueName) {
             // Format venue with link if enabled
             if (enableLinks && venueLink) {
-              hierarchyText += separator + `<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link">${venueName}</a>`;
+              hierarchyText += separator + `<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault()">${venueName}</a>`;
             } else {
               hierarchyText += separator + venueName;
             }
@@ -382,16 +412,17 @@ function Edit({
       }
     };
     buildHierarchy();
-  }, [postId, locationTerms, startLevel, endLevel, showVenue, venueName, venueLink, separator, enableLinks]);
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+  }, [postId, locationTerms, startLevel, endLevel, showVenue, venueName, venueLink, separator, enableLinks, isInQueryLoop, minLevel, maxLevel]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hierarchy Levels', 'gatherpress-venue-hierarchy'),
         initialOpen: true,
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(DualRangeControl, {
-          startLevel: startLevel,
-          endLevel: Math.min(endLevel, maxDepth),
-          maxLevel: maxDepth,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(DualRangeControl, {
+          startLevel: Math.max(minLevel, startLevel),
+          endLevel: Math.min(maxLevel, endLevel),
+          minLevel: minLevel,
+          maxLevel: maxLevel,
           onChange: ({
             startLevel: newStart,
             endLevel: newEnd
@@ -402,24 +433,24 @@ function Edit({
             });
           }
         })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display Options', 'gatherpress-venue-hierarchy'),
         initialOpen: true,
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Separator', 'gatherpress-venue-hierarchy'),
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Character(s) to display between location terms', 'gatherpress-venue-hierarchy'),
           value: separator,
           onChange: value => setAttributes({
             separator: value
           })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show venue', 'gatherpress-venue-hierarchy'),
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display the venue name at the end of the location hierarchy', 'gatherpress-venue-hierarchy'),
           checked: showVenue,
           onChange: value => setAttributes({
             showVenue: value
           })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enable term links', 'gatherpress-venue-hierarchy'),
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Link each location term to its archive page', 'gatherpress-venue-hierarchy'),
           checked: enableLinks,
@@ -428,9 +459,9 @@ function Edit({
           })
         })]
       })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("p", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: isLoading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Spinner, {}) : enableLinks ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.RawHTML, {
+      children: isLoading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Spinner, {}) : enableLinks ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.RawHTML, {
         children: locationHierarchy
       }) : locationHierarchy
     })]
@@ -508,16 +539,6 @@ __webpack_require__.r(__webpack_exports__);
 __webpack_require__.r(__webpack_exports__);
 // extracted by mini-css-extract-plugin
 
-
-/***/ },
-
-/***/ "@wordpress/api-fetch"
-/*!**********************************!*\
-  !*** external ["wp","apiFetch"] ***!
-  \**********************************/
-(module) {
-
-module.exports = window["wp"]["apiFetch"];
 
 /***/ },
 

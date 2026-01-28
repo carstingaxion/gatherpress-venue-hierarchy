@@ -15,7 +15,6 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl, TextControl, Spinner } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import apiFetch from '@wordpress/api-fetch';
 import { RawHTML } from '@wordpress/element';
 
 /**
@@ -31,22 +30,22 @@ import './editor.scss';
  *
  * A range slider with two handles for selecting start and end levels.
  */
-function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
+function DualRangeControl( { startLevel, endLevel, minLevel, maxLevel, onChange } ) {
 	const [ isDragging, setIsDragging ] = useState( null );
 	const [ trackRef, setTrackRef ] = useState( null );
 	
-	// Use abbreviated labels for better spacing with 7 levels
-	const levelLabels = [
+	// Use abbreviated labels for better spacing
+	const allLevelLabels = [
 		__( 'Cont.', 'gatherpress-venue-hierarchy' ),
 		__( 'Country', 'gatherpress-venue-hierarchy' ),
 		__( 'State', 'gatherpress-venue-hierarchy' ),
 		__( 'City', 'gatherpress-venue-hierarchy' ),
-		__( 'Street', 'gatherpress-venue-hierarchy' ),
-		__( 'Number', 'gatherpress-venue-hierarchy' ),
+		__( 'Str.', 'gatherpress-venue-hierarchy' ),
+		__( 'Nr.', 'gatherpress-venue-hierarchy' ),
 	];
 	
 	// Full labels for the output display
-	const fullLevelLabels = [
+	const allFullLevelLabels = [
 		__( 'Continent', 'gatherpress-venue-hierarchy' ),
 		__( 'Country', 'gatherpress-venue-hierarchy' ),
 		__( 'State', 'gatherpress-venue-hierarchy' ),
@@ -55,18 +54,25 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 		__( 'Number', 'gatherpress-venue-hierarchy' ),
 	];
 	
+	// Filter labels to only show allowed range
+	const levelLabels = allLevelLabels.slice( minLevel - 1, maxLevel );
+	const fullLevelLabels = allFullLevelLabels.slice( minLevel - 1, maxLevel );
+	const effectiveMaxLevel = maxLevel - minLevel;
+	
 	const getPositionFromLevel = ( level ) => {
-		return ( ( level - 1 ) / ( maxLevel - 1 ) ) * 100;
+		const adjustedLevel = level - minLevel + 1;
+		return ( ( adjustedLevel - 1 ) / ( effectiveMaxLevel - 1 ) ) * 100;
 	};
 	
 	const getLevelFromPosition = ( clientX ) => {
-		if ( ! trackRef ) return 1;
+		if ( ! trackRef ) return minLevel;
 		
 		const rect = trackRef.getBoundingClientRect();
 		const position = ( clientX - rect.left ) / rect.width;
-		const level = Math.round( position * ( maxLevel - 1 ) ) + 1;
+		const adjustedLevel = Math.round( position * ( effectiveMaxLevel - 1 ) ) + 1;
+		const level = adjustedLevel + minLevel - 1;
 		
-		return Math.max( 1, Math.min( maxLevel, level ) );
+		return Math.max( minLevel, Math.min( maxLevel, level ) );
 	};
 	
 	const handleMouseDown = ( handle ) => ( e ) => {
@@ -111,9 +117,9 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 	
 	return (
 		<div className="dual-range-control">
-			<div className="dual-range-control__labels">
-				{ levelLabels.slice( 0, maxLevel ).map( ( label, index ) => (
-					<span key={ index } className="dual-range-control__label">
+			<div className="dual-range-control__labels" style={ { gridTemplateColumns: `repeat(${ effectiveMaxLevel }, 1fr)` } }>
+				{ levelLabels.map( ( label, index ) => (
+					<span key={ index } className="dual-range-control__label" style={ { left: `calc(${ index } * (100% / ${ effectiveMaxLevel }) + 8px)` } }>
 						{ label }
 					</span>
 				) ) }
@@ -155,11 +161,11 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 					{ __( 'Showing:', 'gatherpress-venue-hierarchy' ) }
 				</span>
 				<strong>
-					{ fullLevelLabels[ startLevel - 1 ] || '' }
+					{ fullLevelLabels[ startLevel - minLevel ] || '' }
 					{ startLevel !== endLevel && (
 						<>
 							{ ' ' + __( 'to', 'gatherpress-venue-hierarchy' ) + ' ' }
-							{ fullLevelLabels[ endLevel - 1 ] || '' }
+							{ fullLevelLabels[ endLevel - minLevel ] || '' }
 						</>
 					) }
 				</strong>
@@ -179,18 +185,25 @@ function DualRangeControl( { startLevel, endLevel, maxLevel, onChange } ) {
 export default function Edit( { attributes, setAttributes, context } ) {
 	const { startLevel, endLevel, enableLinks, showVenue, separator } = attributes;
 	const [ locationHierarchy, setLocationHierarchy ] = useState( '' );
-	const [ maxDepth, setMaxDepth ] = useState( 7 );
 	const [ isLoading, setIsLoading ] = useState( true );
 	
-	// Get the current post ID from context or editor store
-	const postId = useSelect( ( select ) => {
-		return context.postId || select( 'core/editor' )?.getCurrentPostId();
-	}, [ context.postId ] );
+	// Get allowed levels from localized script data
+	const allowedLevels = window.gatherPressVenueHierarchy?.allowedLevels || { min: 1, max: 7 };
+	const minLevel = allowedLevels.min;
+	const maxLevel = allowedLevels.max;
 	
-	// Get the current post type from context or editor store
-	const postType = useSelect( ( select ) => {
-		return context.postType || select( 'core/editor' )?.getCurrentPostType();
-	}, [ context.postType ] );
+	// Get the current post ID from context (works for both direct post and query loop)
+	const postId = context.postId || useSelect( ( select ) => {
+		return select( 'core/editor' )?.getCurrentPostId();
+	}, [] );
+	
+	// Get the current post type from context (works for both direct post and query loop)
+	const postType = context.postType || useSelect( ( select ) => {
+		return select( 'core/editor' )?.getCurrentPostType();
+	}, [] );
+	
+	// Detect if we're in a query loop context
+	const isInQueryLoop = !! context.queryId;
 	
 	// Get location terms using useSelect
 	const locationTerms = useSelect(
@@ -206,7 +219,6 @@ export default function Edit( { attributes, setAttributes, context } ) {
 				{
 					post: postId,
 					per_page: 100,
-					// orderby: 'parent',
 					orderby: 'id',
 					order: 'asc',
 				}
@@ -247,9 +259,9 @@ export default function Edit( { attributes, setAttributes, context } ) {
 	// Check if we're in a GatherPress event context
 	if ( postType && postType !== 'gatherpress_event' ) {
 		return (
-			<p { ...useBlockProps() }>
+			<div { ...useBlockProps() }>
 				{ __( 'This block must be used within a GatherPress event', 'gatherpress-venue-hierarchy' ) }
-			</p>
+			</div>
 		);
 	}
 	
@@ -270,12 +282,17 @@ export default function Edit( { attributes, setAttributes, context } ) {
 					if ( showVenue && venueName ) {
 						// Format venue with link if enabled
 						if ( enableLinks && venueLink ) {
-							setLocationHierarchy( `<a href="${ venueLink }" class="gatherpress-location-link gatherpress-venue-link">${ venueName }</a>` );
+							setLocationHierarchy( `<a href="${ venueLink }" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault()" >${ venueName }</a>` );
 						} else {
 							setLocationHierarchy( venueName );
 						}
 					} else {
-						setLocationHierarchy( __( 'No location hierarchy available for this event', 'gatherpress-venue-hierarchy' ) );
+						if ( isInQueryLoop ) {
+							// In query loop, show a placeholder instead of error
+							setLocationHierarchy( __( 'Location hierarchy will display here', 'gatherpress-venue-hierarchy' ) );
+						} else {
+							setLocationHierarchy( __( 'No location hierarchy available for this event', 'gatherpress-venue-hierarchy' ) );
+						}
 					}
 					setIsLoading( false );
 					return;
@@ -291,7 +308,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 						// For editor preview, wrap in link if enabled
 						if ( enableLinks ) {
 							const termLink = currentTerm.link || '#';
-							path.unshift( `<a href="${ termLink }" class="gatherpress-location-link">${ currentTerm.name }</a>` );
+							path.unshift( `<a href="${ termLink }" class="gatherpress-location-link" onclick="event.preventDefault()" >${ currentTerm.name }</a>` );
 						} else {
 							path.unshift( currentTerm.name );
 						}
@@ -313,20 +330,25 @@ export default function Edit( { attributes, setAttributes, context } ) {
 				
 				const hierarchyPaths = leafTerms.map( term => buildTermPath( term, terms ) );
 				
-				// Calculate the maximum depth
-				const calculatedMaxDepth = Math.max( ...hierarchyPaths.map( path => path.length ) );
-				setMaxDepth( Math.min( calculatedMaxDepth, 7 ) ); // Cap at 7 levels
-				
 				// Filter paths based on start and end levels
+				// Account for the allowed level range offset
 				const filteredPaths = hierarchyPaths.map( path => {
-					const actualStartLevel = Math.max( 1, startLevel );
-					const actualEndLevel = Math.min( endLevel, path.length );
+					// Calculate actual indices based on absolute levels
+					// startLevel and endLevel are absolute (1-7), but path is only the terms that exist
+					// We need to find which absolute levels correspond to which path indices
 					
-					if ( actualStartLevel > path.length ) {
+					// The path always starts from the root term (lowest allowed level in this case)
+					// and goes down to the leaf term
+					// So path[0] corresponds to minLevel, path[1] to minLevel+1, etc.
+					
+					const actualStartIndex = Math.max( 0, startLevel - minLevel );
+					const actualEndIndex = Math.min( path.length, endLevel - minLevel + 1 );
+					
+					if ( actualStartIndex >= path.length ) {
 						return '';
 					}
 					
-					return path.slice( actualStartLevel - 1, actualEndLevel ).join( separator );
+					return path.slice( actualStartIndex, actualEndIndex ).join( separator );
 				} ).filter( path => path !== '' );
 				
 				if ( filteredPaths.length > 0 ) {
@@ -336,7 +358,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 					if ( showVenue && venueName ) {
 						// Format venue with link if enabled
 						if ( enableLinks && venueLink ) {
-							hierarchyText += separator + `<a href="${ venueLink }" class="gatherpress-location-link gatherpress-venue-link">${ venueName }</a>`;
+							hierarchyText += separator + `<a href="${ venueLink }" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault()">${ venueName }</a>`;
 						} else {
 							hierarchyText += separator + venueName;
 						}
@@ -376,7 +398,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 		};
 		
 		buildHierarchy();
-	}, [ postId, locationTerms, startLevel, endLevel, showVenue, venueName, venueLink, separator, enableLinks ] );
+	}, [ postId, locationTerms, startLevel, endLevel, showVenue, venueName, venueLink, separator, enableLinks, isInQueryLoop, minLevel, maxLevel ] );
 	
 	return (
 		<>
@@ -386,9 +408,10 @@ export default function Edit( { attributes, setAttributes, context } ) {
 					initialOpen={ true }
 				>
 					<DualRangeControl
-						startLevel={ startLevel }
-						endLevel={ Math.min( endLevel, maxDepth ) }
-						maxLevel={ maxDepth }
+						startLevel={ Math.max( minLevel, startLevel ) }
+						endLevel={ Math.min( maxLevel, endLevel ) }
+						minLevel={ minLevel }
+						maxLevel={ maxLevel }
 						onChange={ ( { startLevel: newStart, endLevel: newEnd } ) => {
 							setAttributes( {
 								startLevel: newStart,
@@ -421,7 +444,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<p { ...useBlockProps() }>
+			<div { ...useBlockProps() }>
 				{ isLoading ? (
 					<Spinner />
 				) : enableLinks ? (
@@ -429,7 +452,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 				) : (
 					locationHierarchy
 				) }
-			</p>
+			</div>
 		</>
 	);
 }

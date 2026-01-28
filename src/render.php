@@ -136,19 +136,21 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 				return '';
 			}
 			
+			// Get allowed levels from filter
+			$hierarchy = GatherPress_Venue_Hierarchy::get_instance();
+			list( $min_level, $max_level ) = $hierarchy->get_allowed_levels();
+			
 			// Get hierarchy level attributes
-			$start_level = isset( $attributes['startLevel'] ) ? absint( $attributes['startLevel'] ) : 1;
-			$end_level = isset( $attributes['endLevel'] ) ? absint( $attributes['endLevel'] ) : 999;
+			$start_level = isset( $attributes['startLevel'] ) ? absint( $attributes['startLevel'] ) : $min_level;
+			$end_level = isset( $attributes['endLevel'] ) ? absint( $attributes['endLevel'] ) : $max_level;
 			$enable_links = isset( $attributes['enableLinks'] ) ? (bool) $attributes['enableLinks'] : false;
 			$show_venue = isset( $attributes['showVenue'] ) ? (bool) $attributes['showVenue'] : false;
 			// Preserve whitespace by using wp_kses_post instead of sanitize_text_field
 			$separator = isset( $attributes['separator'] ) ? wp_kses_post( $attributes['separator'] ) : ' > ';
 			
-			// Ensure start level is at least 1
-			$start_level = max( 1, $start_level );
-			
-			// Ensure end level is at least equal to start level
-			$end_level = max( $start_level, $end_level );
+			// Ensure levels are within allowed range
+			$start_level = max( $min_level, $start_level );
+			$end_level = min( $max_level, max( $start_level, $end_level ) );
 			
 			// Get venue information if requested
 			$venue_name = '';
@@ -195,7 +197,7 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 			}
 			
 			// Build hierarchy paths
-			$hierarchy_paths = $this->build_hierarchy_paths( $location_terms, $start_level, $end_level, $enable_links, $separator );
+			$hierarchy_paths = $this->build_hierarchy_paths( $location_terms, $start_level, $end_level, $min_level, $enable_links, $separator );
 			
 			if ( empty( $hierarchy_paths ) ) {
 				// If showing venue and we have venue info, show just the venue
@@ -290,27 +292,29 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 		 *      Leaf = Munich (103) because 103 isn't anyone's parent
 		 * 2. Builds full path for each leaf term via build_term_path()
 		 * 3. Filters each path based on startLevel/endLevel:
-		 *    - Converts 1-based levels to 0-based array indices
+		 *    - Accounts for the allowed level range offset (minLevel)
+		 *    - Converts absolute levels to path indices
 		 *    - Uses array_slice() to extract relevant portion
-		 *    - Example: Full path [Europe, Germany, Bavaria, Munich], levels 2-3
+		 *    - Example: Full path [Europe, Germany, Bavaria, Munich], levels 2-3, minLevel=1
 		 *      Result: [Germany, Bavaria]
 		 * 4. Joins filtered paths with custom separator
 		 * 5. Returns array of formatted path strings
 		 *
 		 * Example:
 		 * Input terms: Europe(0), Germany(1), Bavaria(2), Munich(3)
-		 * Input levels: start=1, end=3, separator=" > "
+		 * Input levels: start=1, end=3, min=1, separator=" > "
 		 * Output: ["Europe > Germany > Bavaria"]
 		 *
 		 * @since 0.1.0
 		 * @param array<\WP_Term> $terms        Array of term objects from wp_get_object_terms().
 		 * @param int            $start_level  Starting hierarchy level (1-based, 1=continent).
 		 * @param int            $end_level    Ending hierarchy level (1-based, 5=street).
+		 * @param int            $min_level    Minimum allowed level from filter.
 		 * @param bool           $enable_links Whether to wrap terms in archive links.
 		 * @param string         $separator    Separator string to use between terms.
 		 * @return array<string> Array of formatted hierarchy path strings.
 		 */
-		private function build_hierarchy_paths( array $terms, int $start_level, int $end_level, bool $enable_links, string $separator ): array {
+		private function build_hierarchy_paths( array $terms, int $start_level, int $end_level, int $min_level, bool $enable_links, string $separator ): array {
 			if ( empty( $terms ) ) {
 				return array();
 			}
@@ -346,11 +350,14 @@ if( ! class_exists('GatherPress_Venue_Hierarchy_Block_Renderer')) {
 				}
 				
 				// Filter the path based on start and end levels
+				// Account for the allowed level range offset
+				// The path array indices correspond to absolute levels starting from minLevel
+				// So path[0] = minLevel, path[1] = minLevel+1, etc.
 				$path_length = count( $full_path );
 				
-				// Adjust levels to array indices (0-based)
-				$start_index = $start_level - 1;
-				$end_index = min( $end_level, $path_length );
+				// Calculate array indices from absolute levels
+				$start_index = max( 0, $start_level - $min_level );
+				$end_index = min( $path_length, $end_level - $min_level + 1 );
 				
 				// Skip if start level is beyond the path length
 				if ( $start_index >= $path_length ) {

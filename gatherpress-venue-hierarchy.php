@@ -97,6 +97,7 @@ class GatherPress_Venue_Hierarchy {
 	 * - admin_menu: Add settings page
 	 * - admin_init: Register settings
 	 * - save_post_gatherpress_event (priority 20): Trigger geocoding after event save
+	 * - enqueue_block_editor_assets: Localize script with filter data
 	 *
 	 * Priority 20 ensures GatherPress core has saved venue data first (default priority 10).
 	 *
@@ -107,6 +108,7 @@ class GatherPress_Venue_Hierarchy {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'save_post_gatherpress_event', array( $this, 'maybe_geocode_event_venue' ), 20, 2 );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'localize_block_editor_script' ) );
 	}
 	
 	/**
@@ -126,6 +128,76 @@ class GatherPress_Venue_Hierarchy {
 	public function init(): void {
 		$this->register_location_taxonomy();
 		$this->register_block();
+	}
+	
+	/**
+	 * Get allowed hierarchy levels.
+	 *
+	 * **What:** Returns the configured range of hierarchy levels to use.
+	 *
+	 * **Why:** Allows filtering which levels are saved and displayed, providing flexibility
+	 * for different use cases (e.g., only continent to city, or only city to street number).
+	 *
+	 * **How:** Applies the 'gatherpress_venue_hierarchy_levels' filter with default range [1, 7].
+	 * Sites can hook this filter to restrict levels, e.g., [1, 4] for continent to city only.
+	 *
+	 * Level mapping:
+	 * 1 = Continent
+	 * 2 = Country  
+	 * 3 = State
+	 * 4 = City
+	 * 5 = Street
+	 * 6 = Street Number
+	 *
+	 * Example filter usage:
+	 * add_filter( 'gatherpress_venue_hierarchy_levels', function() {
+	 *     return [2, 4]; // Only Country, State, City
+	 * } );
+	 *
+	 * @since 0.1.0
+	 * @return array{0: int, 1: int} Array with [min_level, max_level].
+	 */
+	public function get_allowed_levels(): array {
+		/**
+		 * Filter the allowed hierarchy levels.
+		 *
+		 * @since 0.1.0
+		 * @param array{0: int, 1: int} $levels Array with [min_level, max_level].
+		 */
+		return apply_filters( 'gatherpress_venue_hierarchy_levels', array( 1, 7 ) );
+	}
+	
+	/**
+	 * Localize block editor script with filter data.
+	 *
+	 * **What:** Makes PHP filter values available to JavaScript in the block editor.
+	 *
+	 * **Why:** The editor needs to know the allowed hierarchy levels to configure the
+	 * dual-range control properly. Using wp_localize_script() is the standard WordPress
+	 * way to pass PHP data to JavaScript without creating custom REST endpoints.
+	 *
+	 * **How:** Uses wp_localize_script() to attach data to the block's editor script.
+	 * The data becomes available in JavaScript as window.gatherPressVenueHierarchy.
+	 * Called on enqueue_block_editor_assets hook to ensure it runs after script registration.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function localize_block_editor_script(): void {
+		// Get the allowed levels from the filter
+		list( $min_level, $max_level ) = $this->get_allowed_levels();
+		
+		// Localize the script with the filter data
+		wp_localize_script(
+			'telex-block-gatherpress-venue-hierarchy-editor-script',
+			'gatherPressVenueHierarchy',
+			array(
+				'allowedLevels' => array(
+					'min' => $min_level,
+					'max' => $max_level,
+				),
+			)
+		);
 	}
 	
 	/**
@@ -167,6 +239,11 @@ class GatherPress_Venue_Hierarchy {
 		$wp_term_query_args['orderby'] = 'parent';
 		$wp_term_query_args['order']   = 'ASC';
 
+		$settings      = \GatherPress\Core\Settings::get_instance();
+		$events_slug   = $settings->get_value( 'general', 'urls', 'events' );
+		$events_slug   = ! empty( $events_slug ) ? $events_slug  : '';
+		$location_slug = $events_slug . '/in';
+
 		$args = array(
 			'labels'                     => $labels,
 			'hierarchical'               => true,
@@ -177,7 +254,7 @@ class GatherPress_Venue_Hierarchy {
 			'show_tagcloud'              => true,
 			'show_in_rest'               => true,
 			'rewrite'                    => array(
-				'slug' => 'location',
+				'slug' => $location_slug,
 				'hierarchical' => true,
 			),
 			'sort'                       => true,
@@ -821,13 +898,19 @@ class GatherPress_Venue_Geocoder {
 	 * 2. Add continent information (not in API response)
 	 * 3. Normalize to consistent structure for hierarchy building
 	 * 4. Account for German-speaking regions' unique administrative structure
-	 * 5. Extract street and house_number for complete address hierarchy
+	 * 5. Handle city-states like Berlin where state and city are identical
+	 * 6. Extract street and house_number for complete address hierarchy
 	 *
 	 * **How:**
 	 * 1. Validates 'address' field exists in response
 	 * 2. Extracts country_code and uses it to lookup continent
 	 * 3. For German-speaking regions (DE, AT, CH, LU):
-	 *    - Uses 'state' field directly (Bundesland/Canton)
+	 *    - Uses 'state' field if present (Bundesland/Canton)
+	 *    - For city-states (e.g., Berlin where state is missing):
+	 *      - Uses city name as state to maintain hierarchy consistency
+	 *      - Uses suburb (with fallback to borough) as city
+	 *      - This prevents duplicate entries and creates proper hierarchy:
+	 *        Europe > Germany > Berlin > Prenzlauer Berg > Street > Number
 	 * 4. For other countries:
 	 *    - Falls back through state > region > province (handles naming variations)
 	 * 5. Extracts city from city > town > village > county (urban to rural fallback)
@@ -836,19 +919,44 @@ class GatherPress_Venue_Geocoder {
 	 * 8. Sanitizes all values
 	 * 9. Filters out empty values with array_filter()
 	 *
-	 * Example input (German address):
+	 * Example input (Berlin - city-state):
 	 * [
 	 *   'address' => [
-	 *     'house_number' => '1',
-	 *     'road' => 'Marienplatz',
-	 *     'city' => 'Munich',
-	 *     'state' => 'Bavaria',
+	 *     'house_number' => '81-84',
+	 *     'road' => 'Greifswalder Straße',
+	 *     'suburb' => 'Prenzlauer Berg',
+	 *     'borough' => 'Pankow',
+	 *     'city' => 'Berlin',
+	 *     // Note: NO 'state' field for Berlin
 	 *     'country' => 'Germany',
 	 *     'country_code' => 'de'
 	 *   ]
 	 * ]
 	 *
-	 * Example output:
+	 * Example output (Berlin - city-state):
+	 * [
+	 *   'continent' => 'Europe',
+	 *   'country' => 'Germany',
+	 *   'country_code' => 'de',
+	 *   'state' => 'Berlin',              // City name used as state
+	 *   'city' => 'Prenzlauer Berg',      // Suburb used as city (avoids duplication)
+	 *   'street' => 'Greifswalder Straße',
+	 *   'street_number' => '81-84'
+	 * ]
+	 *
+	 * Example input (Munich - has separate state):
+	 * [
+	 *   'address' => [
+	 *     'house_number' => '1',
+	 *     'road' => 'Marienplatz',
+	 *     'city' => 'Munich',
+	 *     'state' => 'Bavaria',   // Separate state field present
+	 *     'country' => 'Germany',
+	 *     'country_code' => 'de'
+	 *   ]
+	 * ]
+	 *
+	 * Example output (Munich - normal case):
 	 * [
 	 *   'continent' => 'Europe',
 	 *   'country' => 'Germany',
@@ -889,16 +997,45 @@ class GatherPress_Venue_Geocoder {
 		$is_german_region = in_array( $country_code, $german_regions, true );
 		
 		if ( $is_german_region ) {
-			$location['state'] = sanitize_text_field( $address['state'] ?? '' );
+			// For German-speaking regions, try to get state field
+			$state_value = sanitize_text_field( $address['state'] ?? '' );
+			
+			// If state is missing, we're dealing with a city-state (like Berlin)
+			if ( empty( $state_value ) ) {
+				// Get the city name for the state level
+				$city_name = sanitize_text_field(
+					$address['city'] ?? $address['town'] ?? $address['village'] ?? ''
+				);
+				
+				if ( ! empty( $city_name ) ) {
+					// Use city name as state
+					$location['state'] = $city_name;
+					
+					// Use suburb (or borough as fallback) as city to avoid duplication
+					$location['city'] = sanitize_text_field(
+						$address['suburb'] ?? $address['borough'] ?? ''
+					);
+				}
+			} else {
+				// Normal case: state exists separately from city
+				$location['state'] = $state_value;
+				
+				// Extract city normally
+				$location['city'] = sanitize_text_field(
+					$address['city'] ?? $address['town'] ?? $address['village'] ?? $address['county'] ?? ''
+				);
+			}
 		} else {
+			// Non-German regions: use standard fallback chain
 			$location['state'] = sanitize_text_field( 
 				$address['state'] ?? $address['region'] ?? $address['province'] ?? '' 
 			);
+			
+			// Extract city normally
+			$location['city'] = sanitize_text_field(
+				$address['city'] ?? $address['town'] ?? $address['village'] ?? $address['county'] ?? ''
+			);
 		}
-		
-		$location['city'] = sanitize_text_field(
-			$address['city'] ?? $address['town'] ?? $address['village'] ?? $address['county'] ?? ''
-		);
 		
 		// Extract street name (road is most common, but also check street and pedestrian)
 		$location['street'] = sanitize_text_field(
@@ -931,6 +1068,7 @@ class GatherPress_Venue_Geocoder {
  * - Updates parent relationships if term exists with wrong parent
  * - Associates all created terms with the event post
  * - Uses sanitize_title() for proper slug generation (handles ß, accents, etc.)
+ * - Respects allowed level range via filter
  *
  * @since 0.1.0
  */
@@ -970,6 +1108,35 @@ class GatherPress_Venue_Hierarchy_Builder {
 	private function __construct() {}
 	
 	/**
+	 * Check if a specific hierarchy level is allowed.
+	 *
+	 * **What:** Determines if a given level number should be processed based on configuration.
+	 *
+	 * **Why:** Allows sites to restrict which hierarchy levels are created, providing flexibility
+	 * for different use cases without code changes.
+	 *
+	 * **How:** Gets the allowed range via filter and checks if the level falls within bounds.
+	 *
+	 * Level numbers:
+	 * 1 = Continent
+	 * 2 = Country  
+	 * 3 = State
+	 * 4 = City
+	 * 5 = Street
+	 * 6 = Street Number
+	 *
+	 * @since 0.1.0
+	 * @param int $level Level number to check (1-7).
+	 * @return bool True if level is allowed, false otherwise.
+	 */
+	private function is_level_allowed( int $level ): bool {
+		$hierarchy = GatherPress_Venue_Hierarchy::get_instance();
+		list( $min_level, $max_level ) = $hierarchy->get_allowed_levels();
+		
+		return $level >= $min_level && $level <= $max_level;
+	}
+	
+	/**
 	 * Create hierarchy terms.
 	 *
 	 * **What:** Generates complete hierarchical taxonomy term structure from location data.
@@ -979,30 +1146,42 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 * This enables filtering events at any geographic level and provides structured data for the display block.
 	 *
 	 * **How:**
-	 * 1. Creates terms in hierarchical order using cascading term IDs:
-	 *    - Continent (parent: 0 = root level)
-	 *    - Country (parent: continent_term_id)
-	 *    - State (parent: country_term_id)
-	 *    - City (parent: state_term_id)
-	 *    - Street (parent: city_term_id)
-	 *    - Street Number (parent: street_term_id)
-	 * 2. Each step uses get_or_create_term() which:
+	 * 1. Checks allowed level range via filter
+	 * 2. Creates terms in hierarchical order using cascading term IDs:
+	 *    - Continent (level 1, parent: 0 = root level)
+	 *    - Country (level 2, parent: continent_term_id)
+	 *    - State (level 3, parent: country_term_id) - may equal city for city-states
+	 *    - City (level 4, parent: state_term_id) - may be suburb for city-states
+	 *    - Street (level 5, parent: city_term_id)
+	 *    - Street Number (level 6, parent: street_term_id)
+	 * 3. Each step uses get_or_create_term() which:
 	 *    - Checks if term exists by name
 	 *    - Creates if missing with proper slug generation
 	 *    - Updates parent if wrong
 	 *    - Returns term_id for next level
-	 * 3. Collects all valid term IDs (filters out 0s from failures)
-	 * 4. Associates all terms with the event via wp_set_object_terms()
+	 * 4. Skips levels outside allowed range
+	 * 5. Tracks last valid parent for proper relationships
+	 * 6. Collects all valid term IDs (filters out 0s from failures)
+	 * 7. Associates all terms with the event via wp_set_object_terms()
 	 *    - false parameter: Replace existing terms (not append)
 	 *
-	 * Example flow for "1 Marienplatz, Munich, Bavaria, Germany, Europe":
+	 * Example flow for "81-84 Greifswalder Straße, Prenzlauer Berg, Berlin, Germany" (city-state):
+	 * With default levels [1, 7]:
 	 * - Create/get "Europe" term (ID: 100, parent: 0)
 	 * - Create/get "Germany" term (ID: 101, parent: 100)
-	 * - Create/get "Bavaria" term (ID: 102, parent: 101)
-	 * - Create/get "Munich" term (ID: 103, parent: 102)
-	 * - Create/get "Marienplatz" term (ID: 104, parent: 103)
-	 * - Create/get "1" term (ID: 105, parent: 104)
+	 * - Create/get "Berlin" term as state (ID: 102, parent: 101)
+	 * - Create/get "Prenzlauer Berg" term as city (ID: 103, parent: 102)
+	 * - Create/get "Greifswalder Straße" term (ID: 104, parent: 103)
+	 * - Create/get "Greifswalder Straße 81-84" term (ID: 105, parent: 104)
 	 * - Associate post with terms [100, 101, 102, 103, 104, 105]
+	 *
+	 * With restricted levels [2, 4] (Country to City only):
+	 * - Skip continent (level 1 not allowed)
+	 * - Create/get "Germany" term (ID: 101, parent: 0) - root because continent skipped
+	 * - Create/get "Berlin" term as state (ID: 102, parent: 101)
+	 * - Create/get "Prenzlauer Berg" term as city (ID: 103, parent: 102)
+	 * - Skip street levels (5-6 not allowed)
+	 * - Associate post with terms [101, 102, 103]
 	 *
 	 * **Result:** Event is tagged with complete hierarchy, browseable at any level.
 	 *
@@ -1023,28 +1202,52 @@ class GatherPress_Venue_Hierarchy_Builder {
 
 		$locale =  ! empty( $location['country_code'] ) ? $location['country_code'] : '';
 		
-		if ( ! empty( $location['continent'] ) ) {
-			$continent_term_id = $this->get_or_create_term( $location['continent'], 0, $taxonomy, $locale );
+		// Track the last valid parent ID for proper hierarchy
+		$last_parent_id = 0;
+		
+		// Level 1: Continent
+		if ( ! empty( $location['continent'] ) && $this->is_level_allowed( 1 ) ) {
+			$continent_term_id = $this->get_or_create_term( $location['continent'], $last_parent_id, $taxonomy, $locale );
+			if ( $continent_term_id ) {
+				$last_parent_id = $continent_term_id;
+			}
 		}
 		
-		if ( ! empty( $location['country'] ) && $continent_term_id ) {
-			$country_term_id = $this->get_or_create_term( $location['country'], $continent_term_id, $taxonomy, $locale );
+		// Level 2: Country
+		if ( ! empty( $location['country'] ) && $this->is_level_allowed( 2 ) ) {
+			$country_term_id = $this->get_or_create_term( $location['country'], $last_parent_id, $taxonomy, $locale );
+			if ( $country_term_id ) {
+				$last_parent_id = $country_term_id;
+			}
 		}
 		
-		if ( ! empty( $location['state'] ) && $country_term_id ) {
-			$state_term_id = $this->get_or_create_term( $location['state'], $country_term_id, $taxonomy, $locale );
+		// Level 3: State
+		if ( ! empty( $location['state'] ) && $this->is_level_allowed( 3 ) ) {
+			$state_term_id = $this->get_or_create_term( $location['state'], $last_parent_id, $taxonomy, $locale );
+			if ( $state_term_id ) {
+				$last_parent_id = $state_term_id;
+			}
 		}
 		
-		if ( ! empty( $location['city'] ) && $state_term_id ) {
-			$city_term_id = $this->get_or_create_term( $location['city'], $state_term_id, $taxonomy, $locale );
+		// Level 4: City
+		if ( ! empty( $location['city'] ) && $this->is_level_allowed( 4 ) ) {
+			$city_term_id = $this->get_or_create_term( $location['city'], $last_parent_id, $taxonomy, $locale );
+			if ( $city_term_id ) {
+				$last_parent_id = $city_term_id;
+			}
 		}
 		
-		if ( ! empty( $location['street'] ) && $city_term_id ) {
-			$street_term_id = $this->get_or_create_term( $location['street'], $city_term_id, $taxonomy, $locale );
+		// Level 5: Street
+		if ( ! empty( $location['street'] ) && $this->is_level_allowed( 5 ) ) {
+			$street_term_id = $this->get_or_create_term( $location['street'], $last_parent_id, $taxonomy, $locale );
+			if ( $street_term_id ) {
+				$last_parent_id = $street_term_id;
+			}
 		}
 		
-		if ( ! empty( $location['street_number'] ) && $street_term_id ) {
-			$street_number_term_id = $this->get_or_create_term( $location['street_number'], $street_term_id, $taxonomy, $locale );
+		// Level 6: Street Number
+		if ( ! empty( $location['street_number'] ) && $this->is_level_allowed( 6 ) ) {
+			$street_number_term_id = $this->get_or_create_term( $location['street_number'], $last_parent_id, $taxonomy, $locale );
 		}
 		
 		$term_ids = array_filter( array( $continent_term_id, $country_term_id, $state_term_id, $city_term_id, $street_term_id, $street_number_term_id ) );
