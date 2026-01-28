@@ -1069,6 +1069,7 @@ class GatherPress_Venue_Geocoder {
  * - Associates all created terms with the event post
  * - Uses sanitize_title() for proper slug generation (handles ß, accents, etc.)
  * - Respects allowed level range via filter
+ * - Applies filter before term insertion to allow attribute customization
  *
  * @since 0.1.0
  */
@@ -1188,7 +1189,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 * @since 0.1.0
 	 * @param int                  $post_id  Post ID to associate terms with.
 	 * @param array<string, string> $location Location data array with keys:
-	 *                                       'continent', 'country', 'state', 'city', 'street', 'street_number'.
+	 *                                       'continent', 'country', 'country_code', 'state', 'city', 'street', 'street_number'.
 	 * @param string               $taxonomy Taxonomy name (e.g., 'gatherpress-location').
 	 * @return void
 	 */
@@ -1207,7 +1208,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 1: Continent
 		if ( ! empty( $location['continent'] ) && $this->is_level_allowed( 1 ) ) {
-			$continent_term_id = $this->get_or_create_term( $location['continent'], $last_parent_id, $taxonomy, $locale );
+			$continent_term_id = $this->get_or_create_term( $location['continent'], $last_parent_id, $taxonomy, $locale, 1, $location );
 			if ( $continent_term_id ) {
 				$last_parent_id = $continent_term_id;
 			}
@@ -1215,7 +1216,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 2: Country
 		if ( ! empty( $location['country'] ) && $this->is_level_allowed( 2 ) ) {
-			$country_term_id = $this->get_or_create_term( $location['country'], $last_parent_id, $taxonomy, $locale );
+			$country_term_id = $this->get_or_create_term( $location['country'], $last_parent_id, $taxonomy, $locale, 2, $location );
 			if ( $country_term_id ) {
 				$last_parent_id = $country_term_id;
 			}
@@ -1223,7 +1224,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 3: State
 		if ( ! empty( $location['state'] ) && $this->is_level_allowed( 3 ) ) {
-			$state_term_id = $this->get_or_create_term( $location['state'], $last_parent_id, $taxonomy, $locale );
+			$state_term_id = $this->get_or_create_term( $location['state'], $last_parent_id, $taxonomy, $locale, 3, $location );
 			if ( $state_term_id ) {
 				$last_parent_id = $state_term_id;
 			}
@@ -1231,7 +1232,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 4: City
 		if ( ! empty( $location['city'] ) && $this->is_level_allowed( 4 ) ) {
-			$city_term_id = $this->get_or_create_term( $location['city'], $last_parent_id, $taxonomy, $locale );
+			$city_term_id = $this->get_or_create_term( $location['city'], $last_parent_id, $taxonomy, $locale, 4, $location );
 			if ( $city_term_id ) {
 				$last_parent_id = $city_term_id;
 			}
@@ -1239,7 +1240,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 5: Street
 		if ( ! empty( $location['street'] ) && $this->is_level_allowed( 5 ) ) {
-			$street_term_id = $this->get_or_create_term( $location['street'], $last_parent_id, $taxonomy, $locale );
+			$street_term_id = $this->get_or_create_term( $location['street'], $last_parent_id, $taxonomy, $locale, 5, $location );
 			if ( $street_term_id ) {
 				$last_parent_id = $street_term_id;
 			}
@@ -1247,7 +1248,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 		
 		// Level 6: Street Number
 		if ( ! empty( $location['street_number'] ) && $this->is_level_allowed( 6 ) ) {
-			$street_number_term_id = $this->get_or_create_term( $location['street_number'], $last_parent_id, $taxonomy, $locale );
+			$street_number_term_id = $this->get_or_create_term( $location['street_number'], $last_parent_id, $taxonomy, $locale, 6, $location );
 		}
 		
 		$term_ids = array_filter( array( $continent_term_id, $country_term_id, $state_term_id, $city_term_id, $street_term_id, $street_number_term_id ) );
@@ -1266,18 +1267,22 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 * but has the wrong parent (e.g., from manual creation), it fixes the relationship.
 	 * Uses sanitize_title() for proper slug generation, ensuring special characters like
 	 * German ß become "ss" and French accents are properly converted (e.g., é → e).
+	 * Applies a filter before creating the term to allow customization of term attributes,
+	 * such as using country codes as slugs for countries.
 	 *
 	 * **How:**
 	 * 1. Sanitizes term name for display (security + consistency)
 	 * 2. Generates proper slug using sanitize_title() (handles ß → ss, accents, etc.)
-	 * 3. Checks if term exists using get_term_by('slug', ...)
+	 * 3. For country level (level 2), uses country_code as slug if available
+	 * 4. Applies 'gatherpress_venue_hierarchy_term_args' filter to allow customization
+	 * 5. Checks if term exists using get_term_by('slug', ...)
 	 *    - Looks up by slug (not name) to handle transliteration consistently
-	 * 4. If term exists:
+	 * 6. If term exists:
 	 *    - Validates it's a WP_Term object
 	 *    - Checks if parent matches expected parent_id
 	 *    - Updates parent via wp_update_term() if mismatch
 	 *    - Returns existing term_id
-	 * 5. If term doesn't exist:
+	 * 7. If term doesn't exist:
 	 *    - Creates via wp_insert_term() with parent and explicit slug
 	 *    - Handles errors (logs to error_log)
 	 *    - Returns new term_id or 0 on failure
@@ -1301,14 +1306,21 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 *   Input: name="Bavaria", parent_id=101, term exists with parent_id=0
 	 *   Result: Updates parent to 101, returns ID 102
 	 *
+	 * Scenario 5 - Country with code:
+	 *   Input: name="Germany", level=2, location['country_code']='de'
+	 *   Slug: "de" (uses country code)
+	 *   Result: Creates term with slug "de", returns ID
+	 *
 	 * @since 0.1.0
-	 * @param string $name      Term name to find or create.
-	 * @param int    $parent_id Parent term ID (0 for root level).
-	 * @param string $taxonomy  Taxonomy name.
-	 * @param string $locale    Country code of the retrieved address.
+	 * @param string               $name      Term name to find or create.
+	 * @param int                  $parent_id Parent term ID (0 for root level).
+	 * @param string               $taxonomy  Taxonomy name.
+	 * @param string               $locale    Country code of the retrieved address.
+	 * @param int                  $level     Hierarchy level (1-6: continent, country, state, city, street, number).
+	 * @param array<string, string> $location Full location data array for context.
 	 * @return int Term ID on success, 0 on failure.
 	 */
-	private function get_or_create_term( string $name, int $parent_id, string $taxonomy, string $locale = '' ): int {
+	private function get_or_create_term( string $name, int $parent_id, string $taxonomy, string $locale = '', int $level = 0, array $location = array() ): int {
 		$name = sanitize_text_field( $name );
 		// Generate proper slug using sanitize_title() which handles:
 		// - German characters: ß → ss, ä → a, ö → o, ü → u
@@ -1319,6 +1331,61 @@ class GatherPress_Venue_Hierarchy_Builder {
 		// to stay consistent across different languages we use remove_accents directly.
 		$slug = remove_accents( $name, $locale );
 		$slug = sanitize_title( $slug );
+		
+		// For country level, use country_code as slug if available
+		if ( 2 === $level && ! empty( $location['country_code'] ) ) {
+			$slug = $location['country_code'];
+		}
+		
+		/**
+		 * Filter term arguments before creating the term.
+		 *
+		 * **What:** Allows modification of term attributes before insertion.
+		 *
+		 * **Why:** Provides extensibility point for customizing term creation.
+		 * For example, this can be used to ensure country terms use country codes
+		 * as slugs instead of transliterated country names.
+		 *
+		 * **How:** Passes array of term data including name, slug, parent, level,
+		 * and full location context. Filters can modify any attribute except taxonomy.
+		 *
+		 * Example usage:
+		 * add_filter( 'gatherpress_venue_hierarchy_term_args', function( $args ) {
+		 *     // Countries use country code as slug
+		 *     if ( 2 === $args['level'] && ! empty( $args['location']['country_code'] ) ) {
+		 *         $args['slug'] = $args['location']['country_code'];
+		 *     }
+		 *     return $args;
+		 * } );
+		 *
+		 * @since 0.1.0
+		 * @param array<string, mixed> $args {
+		 *     Term arguments.
+		 *
+		 *     @type string               $name      Term name.
+		 *     @type string               $slug      Term slug.
+		 *     @type int                  $parent    Parent term ID.
+		 *     @type string               $taxonomy  Taxonomy name.
+		 *     @type int                  $level     Hierarchy level (1-6).
+		 *     @type array<string, string> $location  Full location data array.
+		 * }
+		 */
+		$term_args = apply_filters(
+			'gatherpress_venue_hierarchy_term_args',
+			array(
+				'name'     => $name,
+				'slug'     => $slug,
+				'parent'   => $parent_id,
+				'taxonomy' => $taxonomy,
+				'level'    => $level,
+				'location' => $location,
+			)
+		);
+		
+		// Extract potentially modified values
+		$name = $term_args['name'];
+		$slug = $term_args['slug'];
+		$parent_id = $term_args['parent'];
 		
 		// Check by slug (not name) to handle transliteration consistently
 		$existing_term = get_term_by( 'slug', $slug, $taxonomy );
