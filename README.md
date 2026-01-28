@@ -18,7 +18,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 
 * Creates a custom hierarchical taxonomy "gatherpress-location"
 * Geocodes venue addresses using the Nominatim (OpenStreetMap) API
-* Automatically generates taxonomy terms in 7 levels: Continent > Country > State > City > Street > Street+Number
+* Automatically generates taxonomy terms in 6 levels: Continent > Country > State > City > Street > Street+Number
 * Establishes parent-child relationships between terms
 * Associates created terms with events
 * Provides a Gutenberg block for displaying location hierarchies
@@ -75,7 +75,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 **Hierarchy Level Filtering:**
 
 * WordPress filter: 'gatherpress_venue_hierarchy_levels'
-* Default range: [1, 7] (all levels)
+* Default range: [1, 6] (all levels)
 * Example: [2, 4] restricts to Country, State, City only
 * Affects both term creation and block display
 * Level mapping:
@@ -92,7 +92,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 **Hierarchy Level Control:**
 
 * Dual-handle range control for selecting start and end levels
-* 7 levels available: Continent, Country, State, City, Street, Number
+* 6 levels available: Continent, Country, State, City, Street, Number
 * Staggered label layout (alternating top/bottom rows) for readability
 * Real-time preview of selected range
 * Respects configured allowed level range from filter
@@ -239,7 +239,7 @@ Use the block's dual-range control:
 * Continent only: Levels 1-1
 * Country through City: Levels 2-4
 * City and Street: Levels 4-5
-* Full hierarchy: Levels 1-7 (or use default 1-999)
+* Full hierarchy: Levels 1-6 (or use default 1-999)
 
 Or configure globally via filter:
 
@@ -299,7 +299,7 @@ The filter restricts which levels are processed:
 
 ### 0.1.0
 * Initial release
-* Hierarchical gatherpress-location taxonomy (7 levels)
+* Hierarchical gatherpress-location taxonomy (6 levels)
 * Nominatim API integration with 1-hour caching and site language support
 * Automatic term creation with parent relationships
 * Country-to-continent mapping with WordPress i18n
@@ -311,7 +311,7 @@ The filter restricts which levels are processed:
 * City-state handling (e.g., Berlin) with suburb fallback
 * Street and street number handling
 * Combined street+number display option
-* Staggered label layout for 7-level range control
+* Staggered label layout for 6-level range control
 * REST API integration
 * PHPStan-compatible type hints
 * Comprehensive docblocks with What/Why/How explanations
@@ -475,7 +475,7 @@ $events = new WP_Query( array(
 
 **Filters:**
 * `gatherpress_venue_hierarchy_levels` - Configure allowed levels
-  - Default: [1, 7]
+  - Default: [1, 6]
   - Return: [min_level, max_level]
   - Example: [2, 4] for Country to City
 * `gatherpress_venue_hierarchy_term_args` - Customize term attributes

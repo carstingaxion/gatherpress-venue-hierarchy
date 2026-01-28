@@ -15,7 +15,7 @@
 	
 	&__labels {
 		display: grid;
-		grid-template-columns: repeat(7, 1fr);
+		grid-template-columns: repeat(6, 1fr);
 		gap: 4px;
 		margin-bottom: 12px;
 		padding: 0 8px;
@@ -36,7 +36,7 @@
 		word-break: break-word;
 		hyphens: auto;
 		position: absolute;
-		width: calc(100% / 7 - 4px);
+		width: calc(100% / 6 - 4px);
 		white-space: nowrap;
 		padding: .5rem;
 		outline: 1px dashed magenta;
@@ -50,13 +50,12 @@
 		}
 		
 		// Position each label horizontally
-		&:nth-child(1) { left: calc(0 * (100% / 7) + 8px); }
-		&:nth-child(2) { left: calc(1 * (100% / 7) + 8px); }
-		&:nth-child(3) { left: calc(2 * (100% / 7) + 8px); }
-		&:nth-child(4) { left: calc(3 * (100% / 7) + 8px); }
-		&:nth-child(5) { left: calc(4 * (100% / 7) + 8px); }
-		&:nth-child(6) { left: calc(5 * (100% / 7) + 8px); }
-		&:nth-child(7) { left: calc(6 * (100% / 7) + 8px); }
+		&:nth-child(1) { left: calc(0 * (100% / 6) + 8px); }
+		&:nth-child(2) { left: calc(1 * (100% / 6) + 8px); }
+		&:nth-child(3) { left: calc(2 * (100% / 6) + 8px); }
+		&:nth-child(4) { left: calc(3 * (100% / 6) + 8px); }
+		&:nth-child(5) { left: calc(4 * (100% / 6) + 8px); }
+		&:nth-child(6) { left: calc(5 * (100% / 6) + 8px); }
 	}
 	
 	&__track-container {

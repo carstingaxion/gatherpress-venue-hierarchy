@@ -201,7 +201,7 @@ class GatherPress_Venue_Hierarchy {
 	 * **Why:** Allows filtering which levels are saved and displayed, providing flexibility
 	 * for different use cases (e.g., only continent to city, or only city to street number).
 	 *
-	 * **How:** Applies the 'gatherpress_venue_hierarchy_levels' filter with default range [1, 7].
+	 * **How:** Applies the 'gatherpress_venue_hierarchy_levels' filter with default range [1, 6].
 	 * Sites can hook this filter to restrict levels, e.g., [1, 4] for continent to city only.
 	 *
 	 * Level mapping:
@@ -227,7 +227,7 @@ class GatherPress_Venue_Hierarchy {
 		 * @since 0.1.0
 		 * @param array{0: int, 1: int} $levels Array with [min_level, max_level].
 		 */
-		return apply_filters( 'gatherpress_venue_hierarchy_levels', array( 1, 7 ) );
+		return apply_filters( 'gatherpress_venue_hierarchy_levels', array( 1, 6 ) );
 	}
 	
 	/**
@@ -1079,9 +1079,9 @@ class GatherPress_Venue_Geocoder {
 					// Use city name as state
 					$location['state'] = $city_name;
 					
-					// Use suburb (or borough as fallback) as city to avoid duplication
+					// Use city_district (or suburb or borough as fallback) as city to avoid duplication
 					$location['city'] = sanitize_text_field(
-						$address['suburb'] ?? $address['borough'] ?? ''
+						$address['city_district'] ?? $address['suburb'] ?? $address['borough'] ?? ''
 					);
 				}
 			} else {
@@ -1127,7 +1127,7 @@ class GatherPress_Venue_Geocoder {
  * **Why:** Separates term creation logic from geocoding logic (Single Responsibility Principle).
  * Handles the complex task of establishing parent-child relationships between terms
  * and ensuring terms exist before referencing them as parents. This prevents orphaned
- * terms and maintains data integrity across 7 levels of hierarchy.
+ * terms and maintains data integrity across 6 levels of hierarchy.
  *
  * **How:** 
  * - Creates terms in top-down order (continent > country > state > city > street > street-number)
@@ -1195,7 +1195,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 * 6 = Street Number
 	 *
 	 * @since 0.1.0
-	 * @param int $level Level number to check (1-7).
+	 * @param int $level Level number to check (1-6).
 	 * @return bool True if level is allowed, false otherwise.
 	 */
 	private function is_level_allowed( int $level ): bool {
@@ -1235,7 +1235,7 @@ class GatherPress_Venue_Hierarchy_Builder {
 	 *    - false parameter: Replace existing terms (not append)
 	 *
 	 * Example flow for "81-84 Greifswalder Straße, Prenzlauer Berg, Berlin, Germany" (city-state):
-	 * With default levels [1, 7]:
+	 * With default levels [1, 6]:
 	 * - Create/get "Europe" term (ID: 100, parent: 0)
 	 * - Create/get "Germany" term (ID: 101, parent: 100)
 	 * - Create/get "Berlin" term as state (ID: 102, parent: 101)

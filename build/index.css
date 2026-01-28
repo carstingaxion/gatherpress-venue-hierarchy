@@ -13,7 +13,7 @@
 }
 .dual-range-control__labels {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   margin-bottom: 12px;
   padding: 0 8px;
@@ -33,7 +33,7 @@
   word-break: break-word;
   hyphens: auto;
   position: absolute;
-  width: calc(14.2857142857% - 4px);
+  width: calc(16.6666666667% - 4px);
   white-space: nowrap;
   padding: 0.5rem;
   outline: 1px dashed magenta;
@@ -48,22 +48,19 @@
   left: calc(0% + 8px);
 }
 .dual-range-control__label:nth-child(2) {
-  left: calc(14.2857142857% + 8px);
+  left: calc(16.6666666667% + 8px);
 }
 .dual-range-control__label:nth-child(3) {
-  left: calc(28.5714285714% + 8px);
+  left: calc(33.3333333333% + 8px);
 }
 .dual-range-control__label:nth-child(4) {
-  left: calc(42.8571428571% + 8px);
+  left: calc(50% + 8px);
 }
 .dual-range-control__label:nth-child(5) {
-  left: calc(57.1428571429% + 8px);
+  left: calc(66.6666666667% + 8px);
 }
 .dual-range-control__label:nth-child(6) {
-  left: calc(71.4285714286% + 8px);
-}
-.dual-range-control__label:nth-child(7) {
-  left: calc(85.7142857143% + 8px);
+  left: calc(83.3333333333% + 8px);
 }
 .dual-range-control__track-container {
   padding: 0 8px;

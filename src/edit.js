@@ -57,7 +57,7 @@ function DualRangeControl( { startLevel, endLevel, minLevel, maxLevel, onChange 
 	// Filter labels to only show allowed range
 	const levelLabels = allLevelLabels.slice( minLevel - 1, maxLevel );
 	const fullLevelLabels = allFullLevelLabels.slice( minLevel - 1, maxLevel );
-	const effectiveMaxLevel = maxLevel - minLevel;
+	const effectiveMaxLevel = maxLevel - minLevel + 1;
 	
 	const getPositionFromLevel = ( level ) => {
 		const adjustedLevel = level - minLevel + 1;
@@ -188,7 +188,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 	const [ isLoading, setIsLoading ] = useState( true );
 	
 	// Get allowed levels from localized script data
-	const allowedLevels = window.gatherPressVenueHierarchy?.allowedLevels || { min: 1, max: 7 };
+	const allowedLevels = window.gatherPressVenueHierarchy?.allowedLevels || { min: 1, max: 6 };
 	const minLevel = allowedLevels.min;
 	const maxLevel = allowedLevels.max;
 	
@@ -334,7 +334,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 				// Account for the allowed level range offset
 				const filteredPaths = hierarchyPaths.map( path => {
 					// Calculate actual indices based on absolute levels
-					// startLevel and endLevel are absolute (1-7), but path is only the terms that exist
+					// startLevel and endLevel are absolute (1-6), but path is only the terms that exist
 					// We need to find which absolute levels correspond to which path indices
 					
 					// The path always starts from the root term (lowest allowed level in this case)
