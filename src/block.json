@@ -3,9 +3,9 @@
 	"apiVersion": 3,
 	"name": "telex/block-gatherpress-venue-hierarchy",
 	"version": "0.1.0",
-	"title": "Location Hierarchy Display",
-	"category": "widgets",
-	"icon": "location",
+	"title": "Location Hierarchy",
+	"category": "gatherpress",
+	"icon": "admin-site-alt3",
 	"description": "Displays the complete location hierarchy as inline text",
 	"example": {},
 	"attributes": {
@@ -15,7 +15,7 @@
 		},
 		"endLevel": {
 			"type": "number",
-			"default": 999
+			"default": 6
 		},
 		"enableLinks": {
 			"type": "boolean",

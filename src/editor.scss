@@ -10,22 +10,19 @@
 
 /* Dual Range Control Styles */
 .dual-range-control {
-	padding: 16px 0;
+	padding: 16px 4px;
 	overflow: hidden;
 	
 	&__labels {
-		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		gap: 4px;
+		position: relative;
 		margin-bottom: 12px;
 		padding: 0 8px;
-		position: relative;
-		min-height: 48px; // Space for two rows of labels
-		margin-left: -14%;
-    	margin-right: -14%;
+		min-height: 60px; // Space for vertical labels
 	}
 	
 	&__label {
+		position: absolute;
+		bottom: 0;
 		font-size: 10px;
 		color: #757575;
 		font-weight: 500;
@@ -35,27 +32,27 @@
 		line-height: 1.2;
 		word-break: break-word;
 		hyphens: auto;
-		position: absolute;
-		width: calc(100% / 6 - 4px);
 		white-space: nowrap;
-		padding: .5rem;
-		outline: 1px dashed magenta;
-		// Stagger labels: odd indices (1,3,5) on top, even indices (0,2,4,6) on bottom
-		&:nth-child(odd) {
-			top: 0;
-		}
+		padding: 0.5rem;
+		transform: translateX(-50%); // Center the label on its position
+		writing-mode: sideways-lr;
 		
-		&:nth-child(even) {
-			bottom: 0;
-		}
+		// Stagger labels: odd indices (1,3,5) on top, even indices (0,2,4) on bottom
+		// &:nth-child(odd) {
+		// 	top: 0;
+		// }
 		
-		// Position each label horizontally
-		&:nth-child(1) { left: calc(0 * (100% / 6) + 8px); }
-		&:nth-child(2) { left: calc(1 * (100% / 6) + 8px); }
-		&:nth-child(3) { left: calc(2 * (100% / 6) + 8px); }
-		&:nth-child(4) { left: calc(3 * (100% / 6) + 8px); }
-		&:nth-child(5) { left: calc(4 * (100% / 6) + 8px); }
-		&:nth-child(6) { left: calc(5 * (100% / 6) + 8px); }
+		// &:nth-child(even) {
+		// 	bottom: 0;
+		// }
+
+		&:first-child {
+			left: 2% !important;
+		}
+
+		&:last-child {
+			left: 98% !important;
+		}
 	}
 	
 	&__track-container {

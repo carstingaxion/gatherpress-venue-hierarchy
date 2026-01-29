@@ -14,9 +14,13 @@
  * @package GatherPressVenueHierarchy
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+// Constants.
+define( 'GATHERPRESS_LOCATIONS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
+define( 'GATHERPRESS_LOCATIONS_CORE_PATH', __DIR__ );
+
 
 /**
  * Main plugin class using Singleton pattern.
@@ -112,7 +116,8 @@ class GatherPress_Venue_Hierarchy {
 		// Register taxonomy early (priority 5) to prevent rewrite rule conflicts
 		add_action( 'init', array( $this, 'register_location_taxonomy' ), 5 );
 		// Register block at default priority
-		add_action( 'init', array( $this, 'register_block' ), 10 );
+		add_action( 'init', array( $this, 'register_block' ) );
+		// add_action( 'init', array( $this, 'register_block_templates' ) );
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'save_post_gatherpress_event', array( $this, 'maybe_geocode_event_venue' ), 20, 2 );
@@ -288,6 +293,8 @@ class GatherPress_Venue_Hierarchy {
 	 * @return void
 	 */
 	public function register_location_taxonomy(): void {
+		$visibility = ( ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) || 'local' === wp_get_environment_type() ) ? true : false;
+
 		$labels = array(
 			'name'                       => __( 'Locations', 'gatherpress-venue-hierarchy' ),
 			'singular_name'              => __( 'Location', 'gatherpress-venue-hierarchy' ),
@@ -316,8 +323,8 @@ class GatherPress_Venue_Hierarchy {
 			'labels'                     => $labels,
 			'hierarchical'               => true,
 			'public'                     => true,
-			'show_ui'                    => true,
-			'show_admin_column'          => true,
+			'show_ui'                    => $visibility,
+			'show_admin_column'          => $visibility,
 			'show_in_nav_menus'          => true,
 			'show_tagcloud'              => true,
 			'show_in_rest'               => true,
@@ -353,6 +360,21 @@ class GatherPress_Venue_Hierarchy {
 		register_block_type( __DIR__ . '/build/' );
 	}
 	
+
+	public function register_block_templates() {
+		register_block_template( 'gatherpress-locations-templates//taxonomy-gatherpress-location', [
+			'title'       => __( 'Location Archive', 'gatherpress-location' ),
+			'description' => __( 'Displays an archive of events with location-terms.', 'gatherpress-location' ),
+			'content'     => $this->get_template_content( 'taxonomy-gatherpress-location.php' )
+		] );
+	}
+
+	public function get_template_content( $template ) {
+		ob_start();
+		include GATHERPRESS_LOCATIONS_CORE_PATH . "/templates/{$template}";
+		return ob_get_clean();
+	}
+
 	/**
 	 * Add admin menu for plugin settings.
 	 *
@@ -603,6 +625,7 @@ class GatherPress_Venue_Hierarchy {
 	 * @return void
 	 */
 	public function maybe_geocode_event_venue( int $post_id, \WP_Post $post ): void {
+
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 			return;
 		}
@@ -634,7 +657,6 @@ class GatherPress_Venue_Hierarchy {
 		if ( ! is_wp_error( $existing_terms ) && ! empty( $existing_terms ) ) {
 			return;
 		}
-		
 		// Terms don't exist or were deleted - geocode and create them
 		$this->geocode_and_create_hierarchy( $post_id, $venue_info['full_address'] );
 	}
@@ -677,6 +699,125 @@ class GatherPress_Venue_Hierarchy {
 		
 		$hierarchy_builder = GatherPress_Venue_Hierarchy_Builder::get_instance();
 		$hierarchy_builder->create_hierarchy_terms( $post_id, $location, $this->taxonomy );
+	}
+	
+	/**
+	 * Plugin activation hook.
+	 *
+	 * **What:** Runs when the plugin is activated, triggering geocoding for all existing events.
+	 *
+	 * **Why:** When plugin is first installed, existing events won't have location terms.
+	 * This method ensures all events get their hierarchies created automatically upon activation.
+	 *
+	 * **How:**
+	 * 1. Queries for all GatherPress events (no limit)
+	 * 2. Loops through each event
+	 * 3. Fires 'save_post_gatherpress_event' action for each
+	 * 4. This triggers maybe_geocode_event_venue() which creates terms
+	 * 5. Respects existing terms (won't re-geocode if terms already exist)
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function activate(): void {
+		$plugin = \GatherPress_Venue_Hierarchy::get_instance();
+		$plugin->register_location_taxonomy(); // Ensure taxonomy is registered before processing events
+
+		// Query all GatherPress events
+		$events = get_posts(
+			array(
+				'post_type'      => 'gatherpress_event',
+				'posts_per_page' => -1,
+				'post_status'    => 'publish',
+			)
+		);
+
+		// Trigger save action for each event to geocode and create terms
+		foreach ( $events as $event ) {
+			// do_action( 'save_post_gatherpress_event', $event->ID, $event, false );
+			$plugin->maybe_geocode_event_venue( $event->ID, $event );
+
+			//
+			sleep(1); // Be polite to the geocoding API
+		}
+	}
+	
+	/**
+	 * Plugin deactivation hook.
+	 *
+	 * **What:** Runs when the plugin is deactivated, cleaning up all cached geocoding data.
+	 *
+	 * **Why:** Transients consume database space. When plugin is deactivated, the cached
+	 * geocoding data is no longer needed and should be removed to free resources.
+	 *
+	 * **How:**
+	 * 1. Queries database for all transients with 'gpvh_geocode_' prefix
+	 * 2. Uses LIKE query on wp_options table
+	 * 3. Loops through results and deletes each transient
+	 * 4. Handles both single-site and multisite WordPress installations
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function deactivate(): void {
+		global $wpdb;
+		
+		// Delete all geocoding transients
+		$transients = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( '_transient_gpvh_geocode_' ) . '%'
+			)
+		);
+		
+		foreach ( $transients as $transient ) {
+			$key = str_replace( '_transient_', '', $transient->option_name );
+			delete_transient( $key );
+		}
+
+		// Clear the permalinks to remove our post type's rules from the database.
+		flush_rewrite_rules();
+	}
+	
+	/**
+	 * Plugin uninstall handler.
+	 *
+	 * **What:** Removes all plugin data when plugin is deleted via WordPress admin.
+	 *
+	 * **Why:** Complete cleanup when user uninstalls the plugin. Removes taxonomy terms,
+	 * settings, and any remaining transients to leave no trace in the database.
+	 *
+	 * **How:**
+	 * 1. Verifies uninstall is legitimate (checks WP_UNINSTALL_PLUGIN constant)
+	 * 2. Deletes all location taxonomy terms
+	 * 3. Deletes plugin settings option
+	 * 4. Calls deactivate() to clean up transients
+	 * 5. This method should be called from uninstall.php file
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function uninstall(): void {
+		// Get all terms in the location taxonomy
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'gatherpress-location',
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			)
+		);
+		
+		if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+			foreach ( $terms as $term_id ) {
+				wp_delete_term( $term_id, 'gatherpress-location' );
+			}
+		}
+		
+		// Delete plugin settings
+		delete_option( 'gatherpress_venue_hierarchy_defaults' );
+		
+		// Clean up transients
+		self::deactivate();
 	}
 }
 
@@ -1514,3 +1655,12 @@ if ( ! function_exists( 'gatherpress_venue_hierarchy_init' ) ) {
 	}
 	add_action( 'plugins_loaded', 'gatherpress_venue_hierarchy_init' );
 }
+
+// Register activation hook
+register_activation_hook( __FILE__, array( 'GatherPress_Venue_Hierarchy', 'activate' ) );
+
+// Register deactivation hook
+register_deactivation_hook( __FILE__, array( 'GatherPress_Venue_Hierarchy', 'deactivate' ) );
+
+// Register uninstall hook
+register_uninstall_hook( __FILE__, array( 'GatherPress_Venue_Hierarchy', 'uninstall' ) );
