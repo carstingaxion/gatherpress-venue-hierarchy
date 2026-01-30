@@ -6,7 +6,7 @@ import { useEntityProp } from '@wordpress/core-data';
 
 /**
  * Internal dependencies
-*/
+ */
 import './style.scss';
 import Edit from './edit';
 import metadata from './block.json';
@@ -89,20 +89,18 @@ registerBlockType( metadata.name, {
 
 /**
  * Register the venue term change listener as a plugin.
- * 
+ *
  * Registers the venue term change listener as an editor plugin.
- * 
+ *
  * Using registerPlugin ensures the listener:
  * - Works globally in the editor (not tied to block instances)
  * - Properly integrates with WordPress's plugin system
  * - Automatically cleans up when editor unmounts
  * - Follows WordPress best practices for editor extensions
- * 
+ *
  * Calls registerPlugin with a unique name and our listener component.
  * WordPress handles the mounting/unmounting lifecycle automatically.
  */
 registerPlugin( 'gatherpress-location-hierarchy-listener', {
 	render: VenueTermChangeListener,
 } );
-
-

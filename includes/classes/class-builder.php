@@ -86,8 +86,8 @@ class Builder {
 	 * @return bool True if level is allowed, false otherwise.
 	 */
 	private function is_level_allowed( int $level ): bool {
-		$hierarchy = Setup::get_instance();
-		list( $min_level, $max_level ) = $hierarchy->get_allowed_levels();
+		$hierarchy                 = Setup::get_instance();
+		[ $min_level, $max_level ] = $hierarchy->get_allowed_levels();
 		
 		return $level >= $min_level && $level <= $max_level;
 	}
@@ -142,21 +142,21 @@ class Builder {
 	 * **Result:** Event is tagged with complete hierarchy, browseable at any level.
 	 *
 	 * @since 0.1.0
-	 * @param int                  $post_id  Post ID to associate terms with.
+	 * @param int                   $post_id  Post ID to associate terms with.
 	 * @param array<string, string> $location Location data array with keys:
 	 *                                       'continent', 'country', 'country_code', 'state', 'city', 'street', 'street_number'.
-	 * @param string               $taxonomy Taxonomy name (e.g., 'gatherpress_location').
+	 * @param string                $taxonomy Taxonomy name (e.g., 'gatherpress_location').
 	 * @return void
 	 */
 	public function create_hierarchy_terms( int $post_id, array $location, string $taxonomy ): void {
-		$continent_term_id = 0;
-		$country_term_id = 0;
-		$state_term_id = 0;
-		$city_term_id = 0;
-		$street_term_id = 0;
+		$continent_term_id     = 0;
+		$country_term_id       = 0;
+		$state_term_id         = 0;
+		$city_term_id          = 0;
+		$street_term_id        = 0;
 		$street_number_term_id = 0;
 
-		$locale =  ! empty( $location['country_code'] ) ? $location['country_code'] : '';
+		$locale = ! empty( $location['country_code'] ) ? $location['country_code'] : '';
 		
 		// Track the last valid parent ID for proper hierarchy
 		$last_parent_id = 0;
@@ -267,11 +267,11 @@ class Builder {
 	 *   Result: Creates term with slug "de", returns ID
 	 *
 	 * @since 0.1.0
-	 * @param string               $name      Term name to find or create.
-	 * @param int                  $parent_id Parent term ID (0 for root level).
-	 * @param string               $taxonomy  Taxonomy name.
-	 * @param string               $locale    Country code of the retrieved address.
-	 * @param int                  $level     Hierarchy level (1-6: continent, country, state, city, street, number).
+	 * @param string                $name      Term name to find or create.
+	 * @param int                   $parent_id Parent term ID (0 for root level).
+	 * @param string                $taxonomy  Taxonomy name.
+	 * @param string                $locale    Country code of the retrieved address.
+	 * @param int                   $level     Hierarchy level (1-6: continent, country, state, city, street, number).
 	 * @param array<string, string> $location Full location data array for context.
 	 * @return int Term ID on success, 0 on failure.
 	 */
@@ -342,8 +342,8 @@ class Builder {
 		);
 		
 		// Extract potentially modified values
-		$name = $term_args['name'];
-		$slug = $term_args['slug'];
+		$name      = $term_args['name'];
+		$slug      = $term_args['slug'];
 		$parent_id = $term_args['parent'];
 		
 		// Check by slug (not name) to handle transliteration consistently
@@ -366,7 +366,7 @@ class Builder {
 			$taxonomy,
 			array(
 				'parent' => $parent_id,
-				'slug' => $slug,
+				'slug'   => $slug,
 			)
 		);
 		

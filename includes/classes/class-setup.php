@@ -165,7 +165,7 @@ class Setup {
 		// If exactly one child exists, add canonical to that child
 		if ( count( $child_terms ) === 1 ) {
 			$child_term = $child_terms[0];
-			$child_url = get_term_link( $child_term );
+			$child_url  = get_term_link( $child_term );
 			
 			if ( ! is_wp_error( $child_url ) ) {
 				printf(
@@ -237,7 +237,7 @@ class Setup {
 	 */
 	public function localize_block_editor_script(): void {
 		// Get the allowed levels from the filter
-		list( $min_level, $max_level ) = $this->get_allowed_levels();
+		[ $min_level, $max_level ] = $this->get_allowed_levels();
 		
 		// Localize the script with the filter data
 		wp_localize_script(
@@ -279,48 +279,48 @@ class Setup {
 	public function register_location_taxonomy(): void {
 		$visibility = (
 			( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) ||
-			in_array( wp_get_environment_type(), array('local', 'development'), true )
+			in_array( wp_get_environment_type(), array( 'local', 'development' ), true )
 		) ? true : false;
 
-		$labels = array(
-			'name'                       => __( 'Locations', 'gatherpress-location-hierarchy' ),
-			'singular_name'              => __( 'Location', 'gatherpress-location-hierarchy' ),
-			'search_items'               => __( 'Search Locations', 'gatherpress-location-hierarchy' ),
-			'all_items'                  => __( 'All Locations', 'gatherpress-location-hierarchy' ),
-			'parent_item'                => __( 'Parent Location', 'gatherpress-location-hierarchy' ),
-			'parent_item_colon'          => __( 'Parent Location:', 'gatherpress-location-hierarchy' ),
-			'edit_item'                  => __( 'Edit Location', 'gatherpress-location-hierarchy' ),
-			'update_item'                => __( 'Update Location', 'gatherpress-location-hierarchy' ),
-			'add_new_item'               => __( 'Add New Location', 'gatherpress-location-hierarchy' ),
-			'new_item_name'              => __( 'New Location Name', 'gatherpress-location-hierarchy' ),
-			'menu_name'                  => __( 'Location Hierarchy', 'gatherpress-location-hierarchy' ),
+		$labels                        = array(
+			'name'              => __( 'Locations', 'gatherpress-location-hierarchy' ),
+			'singular_name'     => __( 'Location', 'gatherpress-location-hierarchy' ),
+			'search_items'      => __( 'Search Locations', 'gatherpress-location-hierarchy' ),
+			'all_items'         => __( 'All Locations', 'gatherpress-location-hierarchy' ),
+			'parent_item'       => __( 'Parent Location', 'gatherpress-location-hierarchy' ),
+			'parent_item_colon' => __( 'Parent Location:', 'gatherpress-location-hierarchy' ),
+			'edit_item'         => __( 'Edit Location', 'gatherpress-location-hierarchy' ),
+			'update_item'       => __( 'Update Location', 'gatherpress-location-hierarchy' ),
+			'add_new_item'      => __( 'Add New Location', 'gatherpress-location-hierarchy' ),
+			'new_item_name'     => __( 'New Location Name', 'gatherpress-location-hierarchy' ),
+			'menu_name'         => __( 'Location Hierarchy', 'gatherpress-location-hierarchy' ),
 		);
 		$wp_term_query_args            = array();
 		$wp_term_query_args['orderby'] = 'parent';
 		$wp_term_query_args['order']   = 'ASC';
 		
 		if ( class_exists( 'GatherPress\Core\Settings' ) ) {
-			$settings      = \GatherPress\Core\Settings::get_instance();
-			$events_slug   = $settings->get_value( 'general', 'urls', 'events' );
+			$settings    = \GatherPress\Core\Settings::get_instance();
+			$events_slug = $settings->get_value( 'general', 'urls', 'events' );
 		}
-		$events_slug   = ! empty( $events_slug ) ? $events_slug  : '';
+		$events_slug   = ! empty( $events_slug ) ? $events_slug : '';
 		$location_slug = $events_slug . '/in';
 
 		$args = array(
-			'labels'                     => $labels,
-			'hierarchical'               => true,
-			'public'                     => true,
-			'show_ui'                    => $visibility,
-			'show_admin_column'          => $visibility,
-			'show_in_nav_menus'          => true,
-			'show_tagcloud'              => true,
-			'show_in_rest'               => true,
-			'rewrite'                    => array(
-				'slug' => $location_slug,
+			'labels'            => $labels,
+			'hierarchical'      => true,
+			'public'            => true,
+			'show_ui'           => $visibility,
+			'show_admin_column' => $visibility,
+			'show_in_nav_menus' => true,
+			'show_tagcloud'     => true,
+			'show_in_rest'      => true,
+			'rewrite'           => array(
+				'slug'         => $location_slug,
 				'hierarchical' => true,
 			),
-			'sort'                       => true,
-			'args'                       => $wp_term_query_args,
+			'sort'              => true,
+			'args'              => $wp_term_query_args,
 		);
 		
 		register_taxonomy( $this->taxonomy, array( 'gatherpress_event' ), $args );
@@ -345,11 +345,14 @@ class Setup {
 	
 
 	public function register_block_templates() {
-		register_block_template( 'gatherpress-locations-templates//taxonomy-gatherpress_location', [
-			'title'       => __( 'Location Archive', 'gatherpress-location-hierarchy' ),
-			'description' => __( 'Displays an archive of events with location-terms.', 'gatherpress-location-hierarchy' ),
-			'content'     => $this->get_template_content( 'taxonomy-gatherpress_location.php' )
-		] );
+		register_block_template(
+			'gatherpress-locations-templates//taxonomy-gatherpress_location',
+			[
+				'title'       => __( 'Location Archive', 'gatherpress-location-hierarchy' ),
+				'description' => __( 'Displays an archive of events with location-terms.', 'gatherpress-location-hierarchy' ),
+				'content'     => $this->get_template_content( 'taxonomy-gatherpress_location.php' ),
+			] 
+		);
 	}
 
 	public function get_template_content( $template ) {
@@ -392,14 +395,14 @@ class Setup {
 			'gatherpress_location_hierarchy',
 			'gatherpress_location_hierarchy_defaults',
 			array(
-				'type' => 'array',
+				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_settings' ),
-				'default' => array(
-					'continent' => '',
-					'country' => '',
-					'state' => '',
-					'city' => '',
-					'street' => '',
+				'default'           => array(
+					'continent'     => '',
+					'country'       => '',
+					'state'         => '',
+					'city'          => '',
+					'street'        => '',
 					'street_number' => '',
 				),
 			)
@@ -421,11 +424,11 @@ class Setup {
 		}
 		
 		return array(
-			'continent' => sanitize_text_field( $input['continent'] ?? '' ),
-			'country' => sanitize_text_field( $input['country'] ?? '' ),
-			'state' => sanitize_text_field( $input['state'] ?? '' ),
-			'city' => sanitize_text_field( $input['city'] ?? '' ),
-			'street' => sanitize_text_field( $input['street'] ?? '' ),
+			'continent'     => sanitize_text_field( $input['continent'] ?? '' ),
+			'country'       => sanitize_text_field( $input['country'] ?? '' ),
+			'state'         => sanitize_text_field( $input['state'] ?? '' ),
+			'city'          => sanitize_text_field( $input['city'] ?? '' ),
+			'street'        => sanitize_text_field( $input['street'] ?? '' ),
 			'street_number' => sanitize_text_field( $input['street_number'] ?? '' ),
 		);
 	}
@@ -448,22 +451,25 @@ class Setup {
 			return;
 		}
 		
-		$defaults = get_option( 'gatherpress_location_hierarchy_defaults', array(
-			'continent' => '',
-			'country' => '',
-			'state' => '',
-			'city' => '',
-			'street' => '',
-			'street_number' => '',
-		) );
+		$defaults = get_option(
+			'gatherpress_location_hierarchy_defaults',
+			array(
+				'continent'     => '',
+				'country'       => '',
+				'state'         => '',
+				'city'          => '',
+				'street'        => '',
+				'street_number' => '',
+			) 
+		);
 		
 		if ( ! is_array( $defaults ) ) {
 			$defaults = array(
-				'continent' => '',
-				'country' => '',
-				'state' => '',
-				'city' => '',
-				'street' => '',
+				'continent'     => '',
+				'country'       => '',
+				'state'         => '',
+				'city'          => '',
+				'street'        => '',
 				'street_number' => '',
 			);
 		}
@@ -566,7 +572,7 @@ class Setup {
 	 * - Associates all terms with the event
 	 *
 	 * @since 0.1.0
-	 * @param int     $post_id Post ID of the event.
+	 * @param int      $post_id Post ID of the event.
 	 * @param \WP_Post $post    Post object.
 	 * @return void
 	 */
@@ -585,7 +591,7 @@ class Setup {
 			return;
 		}
 		
-		$event = new \GatherPress\Core\Event( $post_id );
+		$event      = new \GatherPress\Core\Event( $post_id );
 		$venue_info = $event->get_venue_information();
 		
 		if ( ! is_array( $venue_info ) || empty( $venue_info['full_address'] ) ) {
@@ -645,6 +651,4 @@ class Setup {
 		$hierarchy_builder = Builder::get_instance();
 		$hierarchy_builder->create_hierarchy_terms( $post_id, $location, $this->taxonomy );
 	}
-	
-
 }

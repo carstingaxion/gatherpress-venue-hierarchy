@@ -97,8 +97,7 @@ function gatherpress_location_hierarchy_activate(): void {
 		// do_action( 'save_post_gatherpress_event', $event->ID, $event, false );
 		$plugin->maybe_geocode_event_venue( $event->ID, $event );
 
-		//
-		sleep(1); // Be polite to the geocoding API
+				sleep( 1 ); // Be polite to the geocoding API
 	}
 }
 
