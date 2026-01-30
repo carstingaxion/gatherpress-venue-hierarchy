@@ -1,6 +1,8 @@
 <?php
 /**
- * 
+ * Handles address geocoding via Nominatim OpenStreetMap API.
+ *
+ * @package GatherPressLocationHierarchy
  */
 
 declare(strict_types=1);
@@ -118,190 +120,189 @@ class Geocoder {
 	 */
 	private function get_country_continents(): array {
 		return array(
-			// Europe
-			'de' => __( 'Europe' ),
-			'at' => __( 'Europe' ),
-			'ch' => __( 'Europe' ),
-			'fr' => __( 'Europe' ),
-			'it' => __( 'Europe' ),
-			'es' => __( 'Europe' ),
-			'pt' => __( 'Europe' ),
-			'uk' => __( 'Europe' ),
-			'gb' => __( 'Europe' ),
-			'ie' => __( 'Europe' ),
-			'nl' => __( 'Europe' ),
-			'be' => __( 'Europe' ),
-			'lu' => __( 'Europe' ),
-			'se' => __( 'Europe' ),
-			'no' => __( 'Europe' ),
-			'dk' => __( 'Europe' ),
-			'fi' => __( 'Europe' ),
-			'pl' => __( 'Europe' ),
-			'cz' => __( 'Europe' ),
-			'sk' => __( 'Europe' ),
-			'hu' => __( 'Europe' ),
-			'ro' => __( 'Europe' ),
-			'bg' => __( 'Europe' ),
-			'gr' => __( 'Europe' ),
-			'hr' => __( 'Europe' ),
-			'si' => __( 'Europe' ),
-			'rs' => __( 'Europe' ),
-			'ba' => __( 'Europe' ),
-			'me' => __( 'Europe' ),
-			'mk' => __( 'Europe' ),
-			'al' => __( 'Europe' ),
-			'tr' => __( 'Europe' ),
-			'ru' => __( 'Europe' ),
-			'ua' => __( 'Europe' ),
-			'by' => __( 'Europe' ),
-			'md' => __( 'Europe' ),
-			'ee' => __( 'Europe' ),
-			'lv' => __( 'Europe' ),
-			'lt' => __( 'Europe' ),
-			'is' => __( 'Europe' ),
-			// North America
-			'us' => __( 'North America' ),
-			'ca' => __( 'North America' ),
-			'mx' => __( 'North America' ),
-			'gt' => __( 'North America' ),
-			'bz' => __( 'North America' ),
-			'sv' => __( 'North America' ),
-			'hn' => __( 'North America' ),
-			'ni' => __( 'North America' ),
-			'cr' => __( 'North America' ),
-			'pa' => __( 'North America' ),
-			'cu' => __( 'North America' ),
-			'jm' => __( 'North America' ),
-			'ht' => __( 'North America' ),
-			'do' => __( 'North America' ),
-			'pr' => __( 'North America' ),
-			// South America
-			'br' => __( 'South America' ),
-			'ar' => __( 'South America' ),
-			'cl' => __( 'South America' ),
-			'co' => __( 'South America' ),
-			'pe' => __( 'South America' ),
-			've' => __( 'South America' ),
-			'ec' => __( 'South America' ),
-			'bo' => __( 'South America' ),
-			'py' => __( 'South America' ),
-			'uy' => __( 'South America' ),
-			'gy' => __( 'South America' ),
-			'sr' => __( 'South America' ),
-			// Asia
-			'cn' => __( 'Asia' ),
-			'jp' => __( 'Asia' ),
-			'in' => __( 'Asia' ),
-			'id' => __( 'Asia' ),
-			'pk' => __( 'Asia' ),
-			'bd' => __( 'Asia' ),
-			'ph' => __( 'Asia' ),
-			'vn' => __( 'Asia' ),
-			'th' => __( 'Asia' ),
-			'mm' => __( 'Asia' ),
-			'kr' => __( 'Asia' ),
-			'af' => __( 'Asia' ),
-			'kp' => __( 'Asia' ),
-			'tw' => __( 'Asia' ),
-			'my' => __( 'Asia' ),
-			'np' => __( 'Asia' ),
-			'lk' => __( 'Asia' ),
-			'kh' => __( 'Asia' ),
-			'la' => __( 'Asia' ),
-			'sg' => __( 'Asia' ),
-			'mn' => __( 'Asia' ),
-			'bt' => __( 'Asia' ),
-			'mv' => __( 'Asia' ),
-			'bn' => __( 'Asia' ),
-			'il' => __( 'Asia' ),
-			'jo' => __( 'Asia' ),
-			'lb' => __( 'Asia' ),
-			'sy' => __( 'Asia' ),
-			'iq' => __( 'Asia' ),
-			'ir' => __( 'Asia' ),
-			'sa' => __( 'Asia' ),
-			'ye' => __( 'Asia' ),
-			'om' => __( 'Asia' ),
-			'ae' => __( 'Asia' ),
-			'qa' => __( 'Asia' ),
-			'kw' => __( 'Asia' ),
-			'bh' => __( 'Asia' ),
-			'am' => __( 'Asia' ),
-			'az' => __( 'Asia' ),
-			'ge' => __( 'Asia' ),
-			'kz' => __( 'Asia' ),
-			'uz' => __( 'Asia' ),
-			'tm' => __( 'Asia' ),
-			'kg' => __( 'Asia' ),
-			'tj' => __( 'Asia' ),
-			// Africa
-			'ng' => __( 'Africa' ),
-			'et' => __( 'Africa' ),
-			'eg' => __( 'Africa' ),
-			'cd' => __( 'Africa' ),
-			'za' => __( 'Africa' ),
-			'tz' => __( 'Africa' ),
-			'ke' => __( 'Africa' ),
-			'ug' => __( 'Africa' ),
-			'dz' => __( 'Africa' ),
-			'sd' => __( 'Africa' ),
-			'ma' => __( 'Africa' ),
-			'ao' => __( 'Africa' ),
-			'gh' => __( 'Africa' ),
-			'mz' => __( 'Africa' ),
-			'mg' => __( 'Africa' ),
-			'cm' => __( 'Africa' ),
-			'ci' => __( 'Africa' ),
-			'ne' => __( 'Africa' ),
-			'bf' => __( 'Africa' ),
-			'ml' => __( 'Africa' ),
-			'mw' => __( 'Africa' ),
-			'zm' => __( 'Africa' ),
-			'so' => __( 'Africa' ),
-			'sn' => __( 'Africa' ),
-			'td' => __( 'Africa' ),
-			'zw' => __( 'Africa' ),
-			'gn' => __( 'Africa' ),
-			'rw' => __( 'Africa' ),
-			'bj' => __( 'Africa' ),
-			'tn' => __( 'Africa' ),
-			'bi' => __( 'Africa' ),
-			'ss' => __( 'Africa' ),
-			'tg' => __( 'Africa' ),
-			'sl' => __( 'Africa' ),
-			'ly' => __( 'Africa' ),
-			'lr' => __( 'Africa' ),
-			'mr' => __( 'Africa' ),
-			'cf' => __( 'Africa' ),
-			'er' => __( 'Africa' ),
-			'gm' => __( 'Africa' ),
-			'bw' => __( 'Africa' ),
-			'ga' => __( 'Africa' ),
-			'gw' => __( 'Africa' ),
-			'mu' => __( 'Africa' ),
-			'sz' => __( 'Africa' ),
-			'dj' => __( 'Africa' ),
-			'gq' => __( 'Africa' ),
-			'km' => __( 'Africa' ),
-			// Oceania
-			'au' => __( 'Oceania' ),
-			'pg' => __( 'Oceania' ),
-			'nz' => __( 'Oceania' ),
-			'fj' => __( 'Oceania' ),
-			'sb' => __( 'Oceania' ),
-			'nc' => __( 'Oceania' ),
-			'pf' => __( 'Oceania' ),
-			'vu' => __( 'Oceania' ),
-			'ws' => __( 'Oceania' ),
-			'ki' => __( 'Oceania' ),
-			'fm' => __( 'Oceania' ),
-			'to' => __( 'Oceania' ),
-			'pw' => __( 'Oceania' ),
-			'mh' => __( 'Oceania' ),
-			'nr' => __( 'Oceania' ),
-			'tv' => __( 'Oceania' ),
-			// Antarctica
-			'aq' => __( 'Antarctica' ),
+			'de' => __( 'Europe', 'default' ),
+			'at' => __( 'Europe', 'default' ),
+			'ch' => __( 'Europe', 'default' ),
+			'fr' => __( 'Europe', 'default' ),
+			'it' => __( 'Europe', 'default' ),
+			'es' => __( 'Europe', 'default' ),
+			'pt' => __( 'Europe', 'default' ),
+			'uk' => __( 'Europe', 'default' ),
+			'gb' => __( 'Europe', 'default' ),
+			'ie' => __( 'Europe', 'default' ),
+			'nl' => __( 'Europe', 'default' ),
+			'be' => __( 'Europe', 'default' ),
+			'lu' => __( 'Europe', 'default' ),
+			'se' => __( 'Europe', 'default' ),
+			'no' => __( 'Europe', 'default' ),
+			'dk' => __( 'Europe', 'default' ),
+			'fi' => __( 'Europe', 'default' ),
+			'pl' => __( 'Europe', 'default' ),
+			'cz' => __( 'Europe', 'default' ),
+			'sk' => __( 'Europe', 'default' ),
+			'hu' => __( 'Europe', 'default' ),
+			'ro' => __( 'Europe', 'default' ),
+			'bg' => __( 'Europe', 'default' ),
+			'gr' => __( 'Europe', 'default' ),
+			'hr' => __( 'Europe', 'default' ),
+			'si' => __( 'Europe', 'default' ),
+			'rs' => __( 'Europe', 'default' ),
+			'ba' => __( 'Europe', 'default' ),
+			'me' => __( 'Europe', 'default' ),
+			'mk' => __( 'Europe', 'default' ),
+			'al' => __( 'Europe', 'default' ),
+			'tr' => __( 'Europe', 'default' ),
+			'ru' => __( 'Europe', 'default' ),
+			'ua' => __( 'Europe', 'default' ),
+			'by' => __( 'Europe', 'default' ),
+			'md' => __( 'Europe', 'default' ),
+			'ee' => __( 'Europe', 'default' ),
+			'lv' => __( 'Europe', 'default' ),
+			'lt' => __( 'Europe', 'default' ),
+			'is' => __( 'Europe', 'default' ),
+
+			'us' => __( 'North America', 'default' ),
+			'ca' => __( 'North America', 'default' ),
+			'mx' => __( 'North America', 'default' ),
+			'gt' => __( 'North America', 'default' ),
+			'bz' => __( 'North America', 'default' ),
+			'sv' => __( 'North America', 'default' ),
+			'hn' => __( 'North America', 'default' ),
+			'ni' => __( 'North America', 'default' ),
+			'cr' => __( 'North America', 'default' ),
+			'pa' => __( 'North America', 'default' ),
+			'cu' => __( 'North America', 'default' ),
+			'jm' => __( 'North America', 'default' ),
+			'ht' => __( 'North America', 'default' ),
+			'do' => __( 'North America', 'default' ),
+			'pr' => __( 'North America', 'default' ),
+
+			'br' => __( 'South America', 'default' ),
+			'ar' => __( 'South America', 'default' ),
+			'cl' => __( 'South America', 'default' ),
+			'co' => __( 'South America', 'default' ),
+			'pe' => __( 'South America', 'default' ),
+			've' => __( 'South America', 'default' ),
+			'ec' => __( 'South America', 'default' ),
+			'bo' => __( 'South America', 'default' ),
+			'py' => __( 'South America', 'default' ),
+			'uy' => __( 'South America', 'default' ),
+			'gy' => __( 'South America', 'default' ),
+			'sr' => __( 'South America', 'default' ),
+
+			'cn' => __( 'Asia', 'default' ),
+			'jp' => __( 'Asia', 'default' ),
+			'in' => __( 'Asia', 'default' ),
+			'id' => __( 'Asia', 'default' ),
+			'pk' => __( 'Asia', 'default' ),
+			'bd' => __( 'Asia', 'default' ),
+			'ph' => __( 'Asia', 'default' ),
+			'vn' => __( 'Asia', 'default' ),
+			'th' => __( 'Asia', 'default' ),
+			'mm' => __( 'Asia', 'default' ),
+			'kr' => __( 'Asia', 'default' ),
+			'af' => __( 'Asia', 'default' ),
+			'kp' => __( 'Asia', 'default' ),
+			'tw' => __( 'Asia', 'default' ),
+			'my' => __( 'Asia', 'default' ),
+			'np' => __( 'Asia', 'default' ),
+			'lk' => __( 'Asia', 'default' ),
+			'kh' => __( 'Asia', 'default' ),
+			'la' => __( 'Asia', 'default' ),
+			'sg' => __( 'Asia', 'default' ),
+			'mn' => __( 'Asia', 'default' ),
+			'bt' => __( 'Asia', 'default' ),
+			'mv' => __( 'Asia', 'default' ),
+			'bn' => __( 'Asia', 'default' ),
+			'il' => __( 'Asia', 'default' ),
+			'jo' => __( 'Asia', 'default' ),
+			'lb' => __( 'Asia', 'default' ),
+			'sy' => __( 'Asia', 'default' ),
+			'iq' => __( 'Asia', 'default' ),
+			'ir' => __( 'Asia', 'default' ),
+			'sa' => __( 'Asia', 'default' ),
+			'ye' => __( 'Asia', 'default' ),
+			'om' => __( 'Asia', 'default' ),
+			'ae' => __( 'Asia', 'default' ),
+			'qa' => __( 'Asia', 'default' ),
+			'kw' => __( 'Asia', 'default' ),
+			'bh' => __( 'Asia', 'default' ),
+			'am' => __( 'Asia', 'default' ),
+			'az' => __( 'Asia', 'default' ),
+			'ge' => __( 'Asia', 'default' ),
+			'kz' => __( 'Asia', 'default' ),
+			'uz' => __( 'Asia', 'default' ),
+			'tm' => __( 'Asia', 'default' ),
+			'kg' => __( 'Asia', 'default' ),
+			'tj' => __( 'Asia', 'default' ),
+
+			'ng' => __( 'Africa', 'default' ),
+			'et' => __( 'Africa', 'default' ),
+			'eg' => __( 'Africa', 'default' ),
+			'cd' => __( 'Africa', 'default' ),
+			'za' => __( 'Africa', 'default' ),
+			'tz' => __( 'Africa', 'default' ),
+			'ke' => __( 'Africa', 'default' ),
+			'ug' => __( 'Africa', 'default' ),
+			'dz' => __( 'Africa', 'default' ),
+			'sd' => __( 'Africa', 'default' ),
+			'ma' => __( 'Africa', 'default' ),
+			'ao' => __( 'Africa', 'default' ),
+			'gh' => __( 'Africa', 'default' ),
+			'mz' => __( 'Africa', 'default' ),
+			'mg' => __( 'Africa', 'default' ),
+			'cm' => __( 'Africa', 'default' ),
+			'ci' => __( 'Africa', 'default' ),
+			'ne' => __( 'Africa', 'default' ),
+			'bf' => __( 'Africa', 'default' ),
+			'ml' => __( 'Africa', 'default' ),
+			'mw' => __( 'Africa', 'default' ),
+			'zm' => __( 'Africa', 'default' ),
+			'so' => __( 'Africa', 'default' ),
+			'sn' => __( 'Africa', 'default' ),
+			'td' => __( 'Africa', 'default' ),
+			'zw' => __( 'Africa', 'default' ),
+			'gn' => __( 'Africa', 'default' ),
+			'rw' => __( 'Africa', 'default' ),
+			'bj' => __( 'Africa', 'default' ),
+			'tn' => __( 'Africa', 'default' ),
+			'bi' => __( 'Africa', 'default' ),
+			'ss' => __( 'Africa', 'default' ),
+			'tg' => __( 'Africa', 'default' ),
+			'sl' => __( 'Africa', 'default' ),
+			'ly' => __( 'Africa', 'default' ),
+			'lr' => __( 'Africa', 'default' ),
+			'mr' => __( 'Africa', 'default' ),
+			'cf' => __( 'Africa', 'default' ),
+			'er' => __( 'Africa', 'default' ),
+			'gm' => __( 'Africa', 'default' ),
+			'bw' => __( 'Africa', 'default' ),
+			'ga' => __( 'Africa', 'default' ),
+			'gw' => __( 'Africa', 'default' ),
+			'mu' => __( 'Africa', 'default' ),
+			'sz' => __( 'Africa', 'default' ),
+			'dj' => __( 'Africa', 'default' ),
+			'gq' => __( 'Africa', 'default' ),
+			'km' => __( 'Africa', 'default' ),
+
+			'au' => __( 'Oceania', 'default' ),
+			'pg' => __( 'Oceania', 'default' ),
+			'nz' => __( 'Oceania', 'default' ),
+			'fj' => __( 'Oceania', 'default' ),
+			'sb' => __( 'Oceania', 'default' ),
+			'nc' => __( 'Oceania', 'default' ),
+			'pf' => __( 'Oceania', 'default' ),
+			'vu' => __( 'Oceania', 'default' ),
+			'ws' => __( 'Oceania', 'default' ),
+			'ki' => __( 'Oceania', 'default' ),
+			'fm' => __( 'Oceania', 'default' ),
+			'to' => __( 'Oceania', 'default' ),
+			'pw' => __( 'Oceania', 'default' ),
+			'mh' => __( 'Oceania', 'default' ),
+			'nr' => __( 'Oceania', 'default' ),
+			'tv' => __( 'Oceania', 'default' ),
+
+			'aq' => __( 'Antarctica', 'default' ),
 		);
 	}
 	
@@ -364,9 +365,9 @@ class Geocoder {
 			return $cached;
 		}
 		
-		// Get WordPress site language in format that Nominatim accepts (e.g., 'de', 'en', 'fr')
+		// Get WordPress site language in format that Nominatim accepts (e.g., 'de', 'en', 'fr').
 		$site_locale = get_locale();
-		// Convert locale like 'de_DE' to language code 'de'
+		// Convert locale like 'de_DE' to language code 'de'.
 		$language = explode( '_', $site_locale )[0];
 		
 		$response = wp_remote_get(
@@ -378,12 +379,12 @@ class Geocoder {
 					'limit'           => '1',
 					'accept-language' => $language,
 					// 'polygon_geojson' => 1,
-					'email'           => get_bloginfo( 'admin_email' ), // Nominatim requires an email for identification
+					'email'           => get_bloginfo( 'admin_email' ), // Nominatim requires an email for identification.
 				),
 				$this->api_endpoint
 			),
 			array(
-				'timeout' => 10,
+				'timeout' => 3,
 				'headers' => array(
 					'User-Agent' => 'GatherPress Location Hierarchy WordPress Plugin',
 				),
@@ -503,9 +504,9 @@ class Geocoder {
 		$address      = $data['address'];
 		$country_code = strtolower( $address['country_code'] ?? '' );
 		
-		// Get continent from country code using translated names
+		// Get continent from country code using translated names.
 		$country_continents = $this->get_country_continents();
-		$continent          = $country_continents[ $country_code ] ?? __( 'Unknown' );
+		$continent          = $country_continents[ $country_code ] ?? __( 'Unknown', 'default' );
 		
 		$location = array(
 			'continent'     => $continent,
@@ -521,52 +522,52 @@ class Geocoder {
 		$is_german_region = in_array( $country_code, $german_regions, true );
 		
 		if ( $is_german_region ) {
-			// For German-speaking regions, try to get state field
+			// For German-speaking regions, try to get state field.
 			$state_value = sanitize_text_field( $address['state'] ?? '' );
 			
-			// If state is missing, we're dealing with a city-state (like Berlin)
+			// If state is missing, we're dealing with a city-state (like Berlin).
 			if ( empty( $state_value ) ) {
-				// Get the city name for the state level
+				// Get the city name for the state level.
 				$city_name = sanitize_text_field(
 					$address['city'] ?? $address['town'] ?? $address['village'] ?? ''
 				);
 				
 				if ( ! empty( $city_name ) ) {
-					// Use city name as state
+					// Use city name as state.
 					$location['state'] = $city_name;
 					
-					// Use city_district (or suburb or borough as fallback) as city to avoid duplication
+					// Use city_district (or suburb or borough as fallback) as city to avoid duplication.
 					$location['city'] = sanitize_text_field(
 						$address['city_district'] ?? $address['suburb'] ?? $address['borough'] ?? ''
 					);
 				}
 			} else {
-				// Normal case: state exists separately from city
+				// Normal case: state exists separately from city.
 				$location['state'] = $state_value;
 				
-				// Extract city normally
+				// Extract city normally.
 				$location['city'] = sanitize_text_field(
 					$address['city'] ?? $address['town'] ?? $address['village'] ?? $address['county'] ?? ''
 				);
 			}
 		} else {
-			// Non-German regions: use standard fallback chain
+			// Non-German regions: use standard fallback chain.
 			$location['state'] = sanitize_text_field( 
 				$address['state'] ?? $address['region'] ?? $address['province'] ?? '' 
 			);
 			
-			// Extract city normally
+			// Extract city normally.
 			$location['city'] = sanitize_text_field(
 				$address['city'] ?? $address['town'] ?? $address['village'] ?? $address['county'] ?? ''
 			);
 		}
 		
-		// Extract street name (road is most common, but also check street and pedestrian)
+		// Extract street name (road is most common, but also check street and pedestrian).
 		$location['street'] = sanitize_text_field(
 			$address['road'] ?? $address['street'] ?? $address['pedestrian'] ?? ''
 		);
 		
-		// Extract house/street number
+		// Extract house/street number.
 		$location['street_number'] = sanitize_text_field(
 			$address['house_number'] ?? ''
 		);

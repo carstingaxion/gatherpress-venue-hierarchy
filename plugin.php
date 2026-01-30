@@ -78,12 +78,14 @@ function gatherpress_location_hierarchy_activate(): void {
 		require_once GATHERPRESS_LOCATION_HIERARCHY_CORE_PATH . '/includes/classes/class-geocoder.php';
 	}
 	$plugin = \GatherPress_Location_Hierarchy\Setup::get_instance();
-	$plugin->register_location_taxonomy(); // Ensure taxonomy is registered before processing events
+
+	// Ensure taxonomy is registered before processing events.
+	$plugin->register_location_taxonomy();
 
 	// Clear the permalinks to add our post type's rules to the database.
 	flush_rewrite_rules();
 
-	// Query all GatherPress events
+	// Query all GatherPress events.
 	$events = get_posts(
 		array(
 			'post_type'      => 'gatherpress_event',
@@ -92,12 +94,12 @@ function gatherpress_location_hierarchy_activate(): void {
 		)
 	);
 
-	// Trigger save action for each event to geocode and create terms
+	// Trigger save action for each event to geocode and create terms.
 	foreach ( $events as $event ) {
-		// do_action( 'save_post_gatherpress_event', $event->ID, $event, false );
 		$plugin->maybe_geocode_event_venue( $event->ID, $event );
 
-				sleep( 1 ); // Be polite to the geocoding API
+		// Be polite to the geocoding API.
+		sleep( 1 );
 	}
 }
 
@@ -115,7 +117,7 @@ function gatherpress_location_hierarchy_activate(): void {
 function gatherpress_location_hierarchy_deactivate(): void {
 	global $wpdb;
 	
-	// Delete all geocoding transients
+	// Delete all geocoding transients.
 	$transients = $wpdb->get_results(
 		$wpdb->prepare(
 			"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -148,7 +150,7 @@ function gatherpress_location_hierarchy_deactivate(): void {
  * @return void
  */
 function gatherpress_location_hierarchy_uninstall(): void {
-	// Get all terms in the location taxonomy
+	// Get all terms in the location taxonomy.
 	$terms = get_terms(
 		array(
 			'taxonomy'   => 'gatherpress_location',
@@ -163,17 +165,13 @@ function gatherpress_location_hierarchy_uninstall(): void {
 		}
 	}
 	
-	// Delete plugin settings
+	// Delete plugin settings.
 	delete_option( 'gatherpress_location_hierarchy_defaults' );
-	
-	// Clean up transients
+
+	// Clean up transients.
 	gatherpress_location_hierarchy_deactivate();
 }
-// Register activation hook
+
 register_activation_hook( __FILE__, 'gatherpress_location_hierarchy_activate' );
-
-// Register deactivation hook
 register_deactivation_hook( __FILE__, 'gatherpress_location_hierarchy_deactivate' );
-
-// Register uninstall hook
 register_uninstall_hook( __FILE__, 'gatherpress_location_hierarchy_uninstall' );

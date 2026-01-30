@@ -1,6 +1,8 @@
 <?php
 /**
- * 
+ * Class that orchestrates the rendering process.
+ *
+ * @package GatherPressLocationHierarchy
  */
 
 declare(strict_types=1);
@@ -100,7 +102,7 @@ class Block_Renderer {
 	 * @return string Rendered block HTML or empty string.
 	 */
 	public function render( array $attributes, string $content, \WP_Block $block ): string {
-		// Get post ID from context
+		// Get post ID from context.
 		$post_id = $block->context['postId'] ?? 0;
 		
 		if ( ! $post_id ) {
@@ -114,28 +116,28 @@ class Block_Renderer {
 			return '';
 		}
 		
-		// Verify this is a GatherPress event
+		// Verify this is a GatherPress event.
 		if ( 'gatherpress_event' !== $post->post_type ) {
 			return '';
 		}
 		
-		// Get allowed levels from filter
+		// Get allowed levels from filter.
 		$hierarchy                 = Setup::get_instance();
 		[ $min_level, $max_level ] = $hierarchy->get_allowed_levels();
 		
-		// Get hierarchy level attributes
+		// Get hierarchy level attributes.
 		$start_level  = isset( $attributes['startLevel'] ) ? absint( $attributes['startLevel'] ) : $min_level;
 		$end_level    = isset( $attributes['endLevel'] ) ? absint( $attributes['endLevel'] ) : $max_level;
 		$enable_links = isset( $attributes['enableLinks'] ) ? (bool) $attributes['enableLinks'] : false;
 		$show_venue   = isset( $attributes['showVenue'] ) ? (bool) $attributes['showVenue'] : false;
-		// Preserve whitespace by using wp_kses_post instead of sanitize_text_field
+		// Preserve whitespace by using wp_kses_post instead of sanitize_text_field.
 		$separator = isset( $attributes['separator'] ) ? wp_kses_post( $attributes['separator'] ) : ' > ';
 		
-		// Ensure levels are within allowed range
+		// Ensure levels are within allowed range.
 		$start_level = max( $min_level, $start_level );
 		$end_level   = min( $max_level, max( $start_level, $end_level ) );
 		
-		// Get venue information if requested
+		// Get venue information if requested.
 		$venue_name = '';
 		$venue_link = '';
 		
@@ -149,7 +151,7 @@ class Block_Renderer {
 			}
 		}
 		
-		// Get location terms for this event
+		// Get location terms for this event.
 		$location_terms = wp_get_object_terms(
 			$post_id,
 			'gatherpress_location',
@@ -162,7 +164,7 @@ class Block_Renderer {
 		if ( is_wp_error( $location_terms ) ) {
 			error_log( 'GatherPress Location Hierarchy Block: Error getting terms - ' . $location_terms->get_error_message() );
 			
-			// If showing venue and we have venue info, show just the venue
+			// If showing venue and we have venue info, show just the venue.
 			if ( $show_venue && $venue_name ) {
 				return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 			}
@@ -171,7 +173,7 @@ class Block_Renderer {
 		}
 		
 		if ( empty( $location_terms ) ) {
-			// If showing venue and we have venue info, show just the venue
+			// If showing venue and we have venue info, show just the venue.
 			if ( $show_venue && $venue_name ) {
 				return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 			}
@@ -179,11 +181,11 @@ class Block_Renderer {
 			return '';
 		}
 		
-		// Build hierarchy paths
+		// Build hierarchy paths.
 		$hierarchy_paths = $this->build_hierarchy_paths( $location_terms, $start_level, $end_level, $min_level, $enable_links, $separator );
 		
 		if ( empty( $hierarchy_paths ) ) {
-			// If showing venue and we have venue info, show just the venue
+			// If showing venue and we have venue info, show just the venue.
 			if ( $show_venue && $venue_name ) {
 				return $this->render_output( $venue_name, $venue_link, $enable_links, $separator );
 			}
@@ -191,11 +193,11 @@ class Block_Renderer {
 			return '';
 		}
 		
-		// Join all paths and add venue if requested
+		// Join all paths and add venue if requested.
 		$hierarchy_text = implode( ', ', $hierarchy_paths );
 		
 		if ( $show_venue && $venue_name ) {
-			// Format venue name with optional link
+			// Format venue name with optional link.
 			if ( $enable_links && $venue_link ) {
 				$venue_text = sprintf(
 					'<a href="%s" class="gatherpress-location-link gatherpress-venue-link">%s</a>',
@@ -206,14 +208,14 @@ class Block_Renderer {
 				$venue_text = esc_html( $venue_name );
 			}
 			
-			// Use the separator directly without escaping to preserve whitespace
+			// Use the separator directly without escaping to preserve whitespace.
 			$hierarchy_text .= $separator . $venue_text;
 		}
 		
-		// Get block wrapper attributes
+		// Get block wrapper attributes.
 		$wrapper_attributes = get_block_wrapper_attributes();
 		
-		// Return formatted output
+		// Return formatted output.
 		return sprintf(
 			'<p %s>%s</p>',
 			$wrapper_attributes,
@@ -302,7 +304,7 @@ class Block_Renderer {
 			return array();
 		}
 		
-		// Find the deepest (leaf) terms - those that are not parents of other terms
+		// Find the deepest (leaf) terms - those that are not parents of other terms.
 		$term_ids   = wp_list_pluck( $terms, 'term_id' );
 		$parent_ids = wp_list_pluck( $terms, 'parent' );
 		
@@ -312,18 +314,18 @@ class Block_Renderer {
 				continue;
 			}
 			
-			// A term is a leaf if its ID is not in the parent_ids array
+			// A term is a leaf if its ID is not in the parent_ids array.
 			if ( ! in_array( $term->term_id, $parent_ids, true ) ) {
 				$leaf_terms[] = $term;
 			}
 		}
 		
-		// If no leaf terms found, use all terms
+		// If no leaf terms found, use all terms.
 		if ( empty( $leaf_terms ) ) {
 			$leaf_terms = $terms;
 		}
 		
-		// Build paths for each leaf term
+		// Build paths for each leaf term.
 		$hierarchy_paths = array();
 		foreach ( $leaf_terms as $term ) {
 			$full_path = $this->build_term_path( $term, $enable_links );
@@ -333,25 +335,25 @@ class Block_Renderer {
 			}
 			
 			// Filter the path based on start and end levels
-			// Account for the allowed level range offset
+			// and account for the allowed level range offset.
 			// The path array indices correspond to absolute levels starting from minLevel
 			// So path[0] = minLevel, path[1] = minLevel+1, etc.
 			$path_length = count( $full_path );
 			
-			// Calculate array indices from absolute levels
+			// Calculate array indices from absolute levels.
 			$start_index = max( 0, $start_level - $min_level );
 			$end_index   = min( $path_length, $end_level - $min_level + 1 );
 			
-			// Skip if start level is beyond the path length
+			// Skip if start level is beyond the path length.
 			if ( $start_index >= $path_length ) {
 				continue;
 			}
 			
-			// Extract the relevant slice of the path
+			// Extract the relevant slice of the path.
 			$filtered_path = array_slice( $full_path, $start_index, $end_index - $start_index );
 			
 			if ( ! empty( $filtered_path ) ) {
-				// Use the separator directly without escaping to preserve whitespace
+				// Use the separator directly without escaping to preserve whitespace.
 				$hierarchy_paths[] = implode( $separator, $filtered_path );
 			}
 		}
@@ -398,19 +400,19 @@ class Block_Renderer {
 		$current_term = $term;
 		$visited      = array();
 		
-		// Prevent infinite loops
+		// Prevent infinite loops.
 		$max_depth = 10;
 		$depth     = 0;
 		
 		while ( $current_term && $depth < $max_depth ) {
-			// Check if we've visited this term (prevent infinite loops)
+			// Check if we've visited this term (prevent infinite loops).
 			if ( in_array( $current_term->term_id, $visited, true ) ) {
 				break;
 			}
 			
 			$visited[] = $current_term->term_id;
 			
-			// Format term name with optional link
+			// Format term name with optional link.
 			if ( $enable_links ) {
 				$term_link = get_term_link( $current_term );
 				if ( ! is_wp_error( $term_link ) ) {

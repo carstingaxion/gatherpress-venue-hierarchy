@@ -1,6 +1,8 @@
 <?php
 /**
- * 
+ * Class for building hierarchy structures for rendering.
+ *
+ * @package GatherPressLocationHierarchy
  */
 
 declare(strict_types=1);
@@ -158,10 +160,10 @@ class Builder {
 
 		$locale = ! empty( $location['country_code'] ) ? $location['country_code'] : '';
 		
-		// Track the last valid parent ID for proper hierarchy
+		// Track the last valid parent ID for proper hierarchy.
 		$last_parent_id = 0;
 		
-		// Level 1: Continent
+		// Level 1: Continent.
 		if ( ! empty( $location['continent'] ) && $this->is_level_allowed( 1 ) ) {
 			$continent_term_id = $this->get_or_create_term( $location['continent'], $last_parent_id, $taxonomy, $locale, 1, $location );
 			if ( $continent_term_id ) {
@@ -169,7 +171,7 @@ class Builder {
 			}
 		}
 		
-		// Level 2: Country
+		// Level 2: Country.
 		if ( ! empty( $location['country'] ) && $this->is_level_allowed( 2 ) ) {
 			$country_term_id = $this->get_or_create_term( $location['country'], $last_parent_id, $taxonomy, $locale, 2, $location );
 			if ( $country_term_id ) {
@@ -177,7 +179,7 @@ class Builder {
 			}
 		}
 		
-		// Level 3: State
+		// Level 3: State.
 		if ( ! empty( $location['state'] ) && $this->is_level_allowed( 3 ) ) {
 			$state_term_id = $this->get_or_create_term( $location['state'], $last_parent_id, $taxonomy, $locale, 3, $location );
 			if ( $state_term_id ) {
@@ -185,7 +187,7 @@ class Builder {
 			}
 		}
 		
-		// Level 4: City
+		// Level 4: City.
 		if ( ! empty( $location['city'] ) && $this->is_level_allowed( 4 ) ) {
 			$city_term_id = $this->get_or_create_term( $location['city'], $last_parent_id, $taxonomy, $locale, 4, $location );
 			if ( $city_term_id ) {
@@ -193,7 +195,7 @@ class Builder {
 			}
 		}
 		
-		// Level 5: Street
+		// Level 5: Street.
 		if ( ! empty( $location['street'] ) && $this->is_level_allowed( 5 ) ) {
 			$street_term_id = $this->get_or_create_term( $location['street'], $last_parent_id, $taxonomy, $locale, 5, $location );
 			if ( $street_term_id ) {
@@ -201,7 +203,7 @@ class Builder {
 			}
 		}
 		
-		// Level 6: Street Number
+		// Level 6: Street Number.
 		if ( ! empty( $location['street_number'] ) && $this->is_level_allowed( 6 ) ) {
 			$street_number_term_id = $this->get_or_create_term( $location['street_number'], $last_parent_id, $taxonomy, $locale, 6, $location );
 		}
@@ -280,14 +282,14 @@ class Builder {
 		// Generate proper slug using sanitize_title() which handles:
 		// - German characters: ß → ss, ä → a, ö → o, ü → u
 		// - French accents: é → e, è → e, ê → e, à → a, etc.
-		// - Special characters: spaces → hyphens, removes unsafe chars
+		// - Special characters: spaces → hyphens, removes unsafe chars.
 		
 		// sanitize_title uses the sites locale to decide HOW to remove accents,
 		// to stay consistent across different languages we use remove_accents directly.
 		$slug = remove_accents( $name, $locale );
 		$slug = sanitize_title( $slug );
 		
-		// For country level, use country_code as slug if available
+		// For country level, use country_code as slug if available.
 		if ( 2 === $level && ! empty( $location['country_code'] ) ) {
 			$slug = $location['country_code'];
 		}
@@ -342,12 +344,12 @@ class Builder {
 			)
 		);
 		
-		// Extract potentially modified values
+		// Extract potentially modified values.
 		$name      = $term_args['name'];
 		$slug      = $term_args['slug'];
 		$parent_id = $term_args['parent'];
 		
-		// Check by slug (not name) to handle transliteration consistently
+		// Check by slug (not name) to handle transliteration consistently.
 		$existing_term = get_term_by( 'slug', $slug, $taxonomy );
 		
 		if ( $existing_term instanceof \WP_Term ) {
@@ -361,7 +363,7 @@ class Builder {
 			return $existing_term->term_id;
 		}
 		
-		// Create term with explicit slug to ensure proper transliteration
+		// Create term with explicit slug to ensure proper transliteration.
 		$term = wp_insert_term(
 			$name,
 			$taxonomy,

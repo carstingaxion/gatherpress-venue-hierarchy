@@ -1,6 +1,8 @@
 <?php
 /**
- * 
+ * Main plugin controller that manages the hierarchical location taxonomy system.
+ *
+ * @package GatherPressLocationHierarchy
  */
 
 declare(strict_types=1);
@@ -92,16 +94,16 @@ class Setup {
 	 * @since 0.1.0
 	 */
 	private function __construct() {
-		// Register taxonomy early (priority 5) to prevent rewrite rule conflicts
+		// Register taxonomy early (priority 5) to prevent rewrite rule conflicts.
 		add_action( 'init', array( $this, 'register_location_taxonomy' ), 5 );
-		// Register block at default priority
+		// Register block at default priority.
 		add_action( 'init', array( $this, 'register_block' ) );
 		// add_action( 'init', array( $this, 'register_block_templates' ) );
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'save_post_gatherpress_event', array( $this, 'maybe_geocode_event_venue' ), 20, 2 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'localize_block_editor_script' ) );
-		// Add canonical URL handling for taxonomy archives
+		// Add canonical URL handling for taxonomy archives.
 		add_action( 'wp_head', array( $this, 'add_canonical_for_single_child_terms' ), 1 );
 	}
 	
@@ -137,7 +139,7 @@ class Setup {
 	 * @return void
 	 */
 	public function add_canonical_for_single_child_terms(): void {
-		// Only run on location taxonomy archives
+		// Only run on location taxonomy archives.
 		if ( ! is_tax( $this->taxonomy ) ) {
 			return;
 		}
@@ -148,13 +150,13 @@ class Setup {
 			return;
 		}
 		
-		// Get direct children of this term
+		// Get direct children of this term.
 		$child_terms = get_terms(
 			array(
 				'taxonomy'   => $this->taxonomy,
 				'parent'     => $current_term->term_id,
 				'hide_empty' => false,
-				'number'     => 2, // Only need to know if there's 1 or more
+				'number'     => 2, // Only need to know if there's 1 or more.
 			)
 		);
 		
@@ -162,7 +164,7 @@ class Setup {
 			return;
 		}
 		
-		// If exactly one child exists, add canonical to that child
+		// If exactly one child exists, add canonical to that child.
 		if ( count( $child_terms ) === 1 ) {
 			$child_term = $child_terms[0];
 			$child_url  = get_term_link( $child_term );
@@ -236,10 +238,10 @@ class Setup {
 	 * @return void
 	 */
 	public function localize_block_editor_script(): void {
-		// Get the allowed levels from the filter
+		// Get the allowed levels from the filter.
 		[ $min_level, $max_level ] = $this->get_allowed_levels();
 		
-		// Localize the script with the filter data
+		// Localize the script with the filter data.
 		wp_localize_script(
 			'gatherpress-location-hierarchy-editor-script',
 			'gatherPressLocationHierarchy',
@@ -598,18 +600,18 @@ class Setup {
 			return;
 		}
 		
-		// Check if location terms already exist for this event
+		// Check if location terms already exist for this event.
 		$existing_terms = wp_get_object_terms(
 			$post_id,
 			$this->taxonomy,
 			array( 'fields' => 'ids' )
 		);
 		
-		// If terms already exist and are valid, skip geocoding
+		// If terms already exist and are valid, skip geocoding.
 		if ( ! is_wp_error( $existing_terms ) && ! empty( $existing_terms ) ) {
 			return;
 		}
-		// Terms don't exist or were deleted - geocode and create them
+		// Terms don't exist or were deleted - geocode and create them.
 		$this->geocode_and_create_hierarchy( $post_id, $venue_info['full_address'] );
 	}
 	

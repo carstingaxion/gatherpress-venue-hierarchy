@@ -27,5 +27,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$renderer = Block_Renderer::get_instance();
-echo $renderer->render( $attributes, $content, $block );
+$gatherpress_location_hierarchy_block = Block_Renderer::get_instance();
+echo $gatherpress_location_hierarchy_block->render( $attributes, $content, $block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
