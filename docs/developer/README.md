@@ -1,5 +1,9 @@
 # Developer Documentation
 
+## Hooks and Filters
+
+Actions and Filters are documented in [HOOKS.md](./hooks/Hooks.md)
+
 ## Data Structure
 
 **Taxonomy:**
@@ -199,11 +203,3 @@ $events = new WP_Query( array(
 ) );
 ```
 
-## Hooks and Filters
-
-**Filters:**
-
-* `gatherpress_location_hierarchy_term_args` - Customize term attributes
-  - Receives: ['name', 'slug', 'parent', 'taxonomy', 'level', 'location']
-  - Return: Modified args array
-  - Used for country code slugs

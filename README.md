@@ -12,7 +12,7 @@ Automatically creates hierarchical location taxonomy for GatherPress events usin
 
 ## Description
 
-This plugin extends GatherPress by adding a hierarchical location taxonomy. When an event is saved, the plugin geocodes the venue address and creates taxonomy terms organized by continent, country, state, city, street, and street number. A Gutenberg block displays these hierarchies with configurable level filtering and canonical URL handling.
+This plugin extends GatherPress by adding a hierarchical location taxonomy. When an event is saved, the plugin geocodes the venue address and creates taxonomy terms organized by continent, country, state, city, street, and street number. A Gutenberg block displays these hierarchies with configurable level filtering.
 
 ### What This Plugin Does
 
@@ -22,10 +22,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 * Establishes parent-child relationships between terms
 * Associates created terms with events
 * Provides a Gutenberg block for displaying location hierarchies
-* Caches API responses for 1 hour using WordPress transients
 * Generates canonical URLs for taxonomy archives with single child terms
-* Supports configurable hierarchy level filtering via WordPress filter
-* Provides extensibility for customizing term attributes before creation
 
 
 ### Display Block Features
@@ -148,44 +145,34 @@ Performance considerations:
 
 Canonical URLs tell search engines which page is the "main" version when multiple URLs show identical content. When a location term has only one child, both taxonomy archives display the same events (duplicate content). The plugin adds a canonical link tag pointing to the child's archive, consolidating SEO value and preventing search engine confusion.
 
-Example: If Europe has only Germany as child, /events/in/europe/ shows canonical tag pointing to /events/in/europe/germany/.
+Example: If Europe has only Germany as child, `/events/in/europe/` shows canonical tag pointing to `/events/in/europe/germany/`.
 
 ### How does slug generation work?
 
 Term slugs are generated using WordPress's remove_accents() with locale parameter, then sanitize_title(). This ensures:
-* German ß becomes "ss"
 * French accents are removed (é→e, è→e, à→a)
+* German ß becomes "ss"
 * Special characters are converted to hyphens
 * Unsafe characters are stripped
 * Consistent transliteration across languages
 * Countries use country_code as slug (via filter)
 
-### How does the hierarchy level filter work?
 
-The filter restricts which levels are processed:
+## Documentation
 
-**In PHP (term creation):**
-* Checks allowed range before creating each term
-* Skips levels outside range
-* Tracks last valid parent for proper relationships
-* Example: [2,4] creates Country→State→City, skips Continent and Street levels
-
-**In JavaScript (block display):**
-* Filter data passed via wp_localize_script()
-* Dual-range control bounds adjusted to filter range
-* Path filtering accounts for offset (minLevel)
-* Calculates array indices from absolute levels
+* [Developer Documentation](./docs/developer/README.md)
+    * [Actions and Filters](./docs/developer/hooks/Hooks.md)
 
 ## Changelog
 
 All notable changes to this project will be documented in the [CHANGELOG.md](CHANGELOG.md).
 
 
-
-
 ## Privacy
 
-This plugin sends venue addresses to Nominatim API (https://nominatim.openstreetmap.org) when events are saved. The site language is also sent for localized results. Only venue addresses and language codes are transmitted. No user data or personal information is sent.
+This plugin sends venue addresses to Nominatim API (https://nominatim.openstreetmap.org) when events are saved.
+
+The site language is also sent for localized results. Only venue addresses and language codes and the admin-email option are transmitted. No user data or personal information is sent.
 
 Geocoding results are cached locally in the WordPress database using transients (1-hour expiration). No data is sent to services other than Nominatim.
 
