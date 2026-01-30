@@ -181,25 +181,6 @@ class Setup {
 	 *
 	 * Returns the configured range of hierarchy levels to use.
 	 *
-	 * Allows filtering which levels are saved and displayed, providing flexibility
-	 * for different use cases (e.g., only continent to city, or only city to street number).
-	 *
-	 * Applies the 'gatherpress_location_hierarchy_levels' filter with default range [1, 6].
-	 * Sites can hook this filter to restrict levels, e.g., [1, 4] for continent to city only.
-	 *
-	 * Level mapping:
-	 * 1 = Continent
-	 * 2 = Country  
-	 * 3 = State
-	 * 4 = City
-	 * 5 = Street
-	 * 6 = Street Number
-	 *
-	 * Example filter usage:
-	 * add_filter( 'gatherpress_location_hierarchy_levels', function() {
-	 *     return [2, 4]; // Only Country, State, City
-	 * } );
-	 *
 	 * @since 0.1.0
 	 * @return array{0: int, 1: int} Array with [min_level, max_level].
 	 */
@@ -207,8 +188,33 @@ class Setup {
 		/**
 		 * Filter the allowed hierarchy levels.
 		 *
+		 * Allows filtering which levels are saved and displayed, providing flexibility
+		 * for different use cases (e.g., only continent to city, or only city to street number).
+		 *
+		 * Level mapping:
+		 * - 1 = Continent
+		 * - 2 = Country  
+		 * - 3 = State
+		 * - 4 = City
+		 * - 5 = Street
+		 * - 6 = Street Number
+		 * 
+		 * Common configurations:
+		 * - Continent only: Levels 1-1
+		 * - Country through City: Levels 2-4
+		 * - City and Street: Levels 4-5
+		 * - Full hierarchy: Levels 1-6 (plugin default)
+		 * 
+		 * @example
+		 * ```php
+		 * add_filter( 'gatherpress_location_hierarchy_levels', function() {
+		 *     return [2, 4]; // Only Country, State, City
+		 * } );
+		 * ```
+		 *
 		 * @since 0.1.0
-		 * @param array{0: int, 1: int} $levels Array with [min_level, max_level].
+		 *
+		 * @param array $levels Array with [min_level, max_level] integers.
 		 */
 		return apply_filters( 'gatherpress_location_hierarchy_levels', array( 1, 6 ) );
 	}
@@ -271,7 +277,10 @@ class Setup {
 	 * @return void
 	 */
 	public function register_location_taxonomy(): void {
-		$visibility = ( ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) || 'local' === wp_get_environment_type() ) ? true : false;
+		$visibility = (
+			( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) ||
+			in_array( wp_get_environment_type(), array('local', 'development'), true )
+		) ? true : false;
 
 		$labels = array(
 			'name'                       => __( 'Locations', 'gatherpress-location-hierarchy' ),

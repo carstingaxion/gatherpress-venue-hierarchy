@@ -304,7 +304,8 @@ class Builder {
 		 * Passes array of term data including name, slug, parent, level,
 		 * and full location context. Filters can modify any attribute except taxonomy.
 		 *
-		 * Example usage:
+		 * @example
+		 * ```php
 		 * add_filter( 'gatherpress_location_hierarchy_term_args', function( $args ) {
 		 *     // Countries use country code as slug
 		 *     if ( 2 === $args['level'] && ! empty( $args['location']['country_code'] ) ) {
@@ -312,18 +313,21 @@ class Builder {
 		 *     }
 		 *     return $args;
 		 * } );
+		 * ```
+		 * 
+		 * The Term arguments, that are not well-parseable by extract-wp-hooks. (https://github.com/akirk/extract-wp-hooks/issues/23)
+		 * ```
+		 *     @ type string                $name      Term name.
+		 *     @ type string                $slug      Term slug.
+		 *     @ type int                   $parent    Parent term ID.
+		 *     @ type string                $taxonomy  Taxonomy name.
+		 *     @ type int                   $level     Hierarchy level (1-6).
+		 *     @ type array<string, string> $location  Full location data array.
+		 * ```
 		 *
 		 * @since 0.1.0
-		 * @param array<string, mixed> $args {
-		 *     Term arguments.
 		 *
-		 *     @type string               $name      Term name.
-		 *     @type string               $slug      Term slug.
-		 *     @type int                  $parent    Parent term ID.
-		 *     @type string               $taxonomy  Taxonomy name.
-		 *     @type int                  $level     Hierarchy level (1-6).
-		 *     @type array<string, string> $location  Full location data array.
-		 * }
+		 * @param array $args Term arguments array.
 		 */
 		$term_args = apply_filters(
 			'gatherpress_location_hierarchy_term_args',
