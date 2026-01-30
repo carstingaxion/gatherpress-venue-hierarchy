@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="gatherpress-calendar">
-	<description>Coding standards for gatherpress-calendar</description>
+<ruleset name="gatherpress-location-hierarchy">
+	<description>Coding standards for gatherpress-location-hierarchy</description>
 
 	<file>.</file>
 	<arg name="basepath" value="./"/><!-- Strip the file paths down to the relevant bit -->
@@ -15,7 +15,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="gatherpress-calendar"/>
+				<element value="gatherpress-location-hierarchy"/>
 			</property>
 		</properties>
 	</rule>

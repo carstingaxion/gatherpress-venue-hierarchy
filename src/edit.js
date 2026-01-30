@@ -52,13 +52,13 @@ import './editor.scss';
  * Hook: useAllowedLevels
  * File: Originally src/hooks/useAllowedLevels.js
  * 
- * **What:** Gets allowed hierarchy levels from localized script data.
+ * Gets allowed hierarchy levels from localized script data.
  * 
- * **Why:** The PHP side filters which hierarchy levels are available (e.g., continent to city only).
+ * The PHP side filters which hierarchy levels are available (e.g., continent to city only).
  * This hook provides that configuration to the editor so the dual-range control can adjust
  * its bounds and prevent users from selecting unavailable levels.
  * 
- * **How:** Reads from window.gatherPressVenueHierarchy object, which is populated via
+ * Reads from window.gatherPressLocationHierarchy object, which is populated via
  * wp_localize_script() in PHP. Provides fallback defaults (1-6) if data is missing.
  * 
  * @since 0.1.0
@@ -72,7 +72,7 @@ import './editor.scss';
  * console.log(maxLevel); // 6 (or configured maximum)
  */
 function useAllowedLevels() {
-	const { allowedLevels } = window.gatherPressVenueHierarchy || {};
+	const { allowedLevels } = window.gatherPressLocationHierarchy || {};
 	const minLevel = allowedLevels?.min || 1;
 	const maxLevel = allowedLevels?.max || 6;
 	
@@ -83,13 +83,13 @@ function useAllowedLevels() {
  * Hook: usePostContext
  * File: Originally src/hooks/usePostContext.js
  * 
- * **What:** Gets post context information including post ID, type, and query loop status.
+ * Gets post context information including post ID, type, and query loop status.
  * 
- * **Why:** The block needs to know which post it's rendering in to fetch the correct location
+ * The block needs to know which post it's rendering in to fetch the correct location
  * data. Context behavior differs between single posts and query loops, requiring different
  * handling for each case.
  * 
- * **How:** Reads from the block's context object (provided by WordPress), extracts post ID,
+ * Reads from the block's context object (provided by WordPress), extracts post ID,
  * post type, and query ID. Determines if block is in a query loop and validates that the
  * post is a GatherPress event.
  * 
@@ -130,15 +130,15 @@ function usePostContext( context ) {
  * Hook: useLocationData
  * File: Originally src/hooks/useLocationData.js
  * 
- * **What:** Fetches location terms and venue information for an event using useEntityProp for direct reactivity.
+ * Fetches location terms and venue information for an event using useEntityProp for direct reactivity.
  * 
- * **Why:** The editor needs to display location hierarchy and optionally venue information.
+ * The editor needs to display location hierarchy and optionally venue information.
  * Using useEntityProp provides direct access to post entity properties with automatic reactivity,
  * ensuring immediate updates when terms are modified in the sidebar panel.
  * 
- * **How:** 
+ * 
  * - Uses useEntityProp to directly access taxonomy term IDs from the post entity
- * - Fetches gatherpress-location taxonomy term IDs
+ * - Fetches gatherpress_location taxonomy term IDs
  * - Optionally fetches _gatherpress_venue taxonomy term ID if showVenue is true
  * - Uses useSelect to resolve term IDs into full term objects with names and links
  * - Returns both data and loading state for proper loading UI
@@ -159,7 +159,7 @@ function usePostContext( context ) {
  * if ( isLoading ) {
  *   return <Spinner />;
  * }
- * console.log( locationTerms ); // [{ id: 1, name: 'Europe', parent: 0, link: '/location/europe/' }, ...]
+ * console.log( locationTerms ); // [{ id: 1, name: 'Europe', parent: 0, link: '/events/in/europe/' }, ...]
  * console.log( venueName ); // 'Main Conference Hall'
  */
 function useLocationData( postId, showVenue, refreshTrigger ) {
@@ -184,7 +184,7 @@ function useLocationData( postId, showVenue, refreshTrigger ) {
 	const [ locationTermIds ] = useEntityProp(
 		'postType',
 		'gatherpress_event',
-		'gatherpress-location',
+		'gatherpress_location',
 		postId
 	);
 	
@@ -216,11 +216,11 @@ function useLocationData( postId, showVenue, refreshTrigger ) {
 			
 			if ( locationTermIds && Array.isArray( locationTermIds ) && locationTermIds.length > 0 ) {
 				for ( const termId of locationTermIds ) {
-					const term = getEntityRecord( 'taxonomy', 'gatherpress-location', termId );
+					const term = getEntityRecord( 'taxonomy', 'gatherpress_location', termId );
 					if ( term ) {
 						terms.push( term );
 					}
-					if ( checkResolving( 'getEntityRecord', [ 'taxonomy', 'gatherpress-location', termId ] ) ) {
+					if ( checkResolving( 'getEntityRecord', [ 'taxonomy', 'gatherpress_location', termId ] ) ) {
 						termsResolving = true;
 					}
 				}
@@ -267,10 +267,10 @@ function useLocationData( postId, showVenue, refreshTrigger ) {
  * Hook: useLocationHierarchy
  * File: Originally src/hooks/useLocationHierarchy.js
  * 
- * **What:** Builds location hierarchy display string from terms, applying level filtering
+ * Builds location hierarchy display string from terms, applying level filtering
  * and formatting with links/separators.
  * 
- * **Why:** Terms come from the database as flat array with parent relationships. Need to:
+ * Terms come from the database as flat array with parent relationships. Need to:
  * - Build hierarchical paths (Europe > Germany > Bavaria > Munich)
  * - Filter to selected level range (e.g., only show Country to City)
  * - Format with custom separator and optional links
@@ -339,7 +339,7 @@ function useLocationHierarchy(
 		setIsLoading( true );
 		
 		if ( ! postId ) {
-			setHierarchy( __( 'No post ID available', 'gatherpress-venue-hierarchy' ) );
+			setHierarchy( __( 'No post ID available', 'gatherpress-location-hierarchy' ) );
 			setIsLoading( false );
 			return;
 		}
@@ -353,8 +353,8 @@ function useLocationHierarchy(
 				setHierarchy( venueText );
 			} else {
 				const message = isInQueryLoop
-					? __( 'Location hierarchy will appear here for matching events', 'gatherpress-venue-hierarchy' )
-					: __( 'No location hierarchy available for this event', 'gatherpress-venue-hierarchy' );
+					? __( 'Location hierarchy will appear here for matching events', 'gatherpress-location-hierarchy' )
+					: __( 'No location hierarchy available for this event', 'gatherpress-location-hierarchy' );
 				setHierarchy( message );
 			}
 			setIsLoading( false );
@@ -379,7 +379,7 @@ function useLocationHierarchy(
 					: venueName;
 				setHierarchy( venueText );
 			} else {
-				setHierarchy( __( 'No location hierarchy available for selected levels', 'gatherpress-venue-hierarchy' ) );
+				setHierarchy( __( 'No location hierarchy available for selected levels', 'gatherpress-location-hierarchy' ) );
 			}
 			setIsLoading( false );
 			return;
@@ -418,9 +418,9 @@ function useLocationHierarchy(
 /**
  * Helper function: buildHierarchyPaths
  * 
- * **What:** Constructs hierarchical path strings from flat term array.
+ * Constructs hierarchical path strings from flat term array.
  * 
- * **Why:** Terms come as flat array with parent IDs. Need to:
+ * Terms come as flat array with parent IDs. Need to:
  * - Identify leaf terms (most specific, deepest in hierarchy)
  * - Build full paths by traversing parent relationships
  * - Filter paths to selected level range
@@ -498,9 +498,9 @@ function buildHierarchyPaths( terms, startLevel, endLevel, minLevel, enableLinks
 /**
  * Helper function: buildTermPath
  * 
- * **What:** Recursively builds complete path from child term to root by traversing parent relationships.
+ * Recursively builds complete path from child term to root by traversing parent relationships.
  * 
- * **Why:** Each term only knows its immediate parent, not full ancestry. Need to traverse
+ * Each term only knows its immediate parent, not full ancestry. Need to traverse
  * up the hierarchy to build complete paths like "Europe > Germany > Bavaria > Munich".
  * Loop detection prevents infinite recursion if relationships are corrupted.
  * 
@@ -523,7 +523,7 @@ function buildHierarchyPaths( terms, startLevel, endLevel, minLevel, enableLinks
  * 
  * @example
  * const path = buildTermPath(
- *   { id: 4, name: 'Munich', parent: 3, link: '/location/.../munich/' },
+ *   { id: 4, name: 'Munich', parent: 3, link: '/events/in/.../munich/' },
  *   allTerms,
  *   true
  * );
@@ -577,9 +577,9 @@ function buildTermPath( term, allTerms, enableLinks ) {
  * Component: DualRangeControl
  * File: Originally src/components/DualRangeControl.js
  * 
- * **What:** Custom dual-handle range control for selecting hierarchy level range with visual track.
+ * Custom dual-handle range control for selecting hierarchy level range with visual track.
  * 
- * **Why:** WordPress doesn't provide a dual-range control component. Need to allow users to
+ * WordPress doesn't provide a dual-range control component. Need to allow users to
  * select both start and end levels on a single slider to define which hierarchy levels to display.
  * Standard approach would require two separate controls, making the relationship unclear.
  * 
@@ -620,12 +620,12 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
 	const [ trackRef, setTrackRef ] = useState( null );
 	
 	const levelLabels = [
-		__( 'Continent', 'gatherpress-venue-hierarchy' ),
-		__( 'Country', 'gatherpress-venue-hierarchy' ),
-		__( 'State', 'gatherpress-venue-hierarchy' ),
-		__( 'City', 'gatherpress-venue-hierarchy' ),
-		__( 'Street', 'gatherpress-venue-hierarchy' ),
-		__( 'Number', 'gatherpress-venue-hierarchy' ),
+		__( 'Continent', 'gatherpress-location-hierarchy' ),
+		__( 'Country', 'gatherpress-location-hierarchy' ),
+		__( 'State', 'gatherpress-location-hierarchy' ),
+		__( 'City', 'gatherpress-location-hierarchy' ),
+		__( 'Street', 'gatherpress-location-hierarchy' ),
+		__( 'Number', 'gatherpress-location-hierarchy' ),
 	];
 	
 	// Filter labels to only show those within allowed range
@@ -735,7 +735,7 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
 			};
 		}
 	}, [ isDraggingStart, isDraggingEnd, startLevel, endLevel ] );
-	console.log( '[DualRangeControl] Rendering with startLevel:', startLevel, 'endLevel:', endLevel );
+	// console.log( '[DualRangeControl] Rendering with startLevel:', startLevel, 'endLevel:', endLevel );
 	const startPercent = getPositionPercent( startLevel );
 	const endPercent = getPositionPercent( endLevel );
 	
@@ -783,7 +783,7 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
 						aria-valuemin={ minLevel }
 						aria-valuemax={ maxLevel }
 						aria-valuenow={ startLevel }
-						aria-label={ __( 'Start level', 'gatherpress-venue-hierarchy' ) }
+						aria-label={ __( 'Start level', 'gatherpress-location-hierarchy' ) }
 						tabIndex={ 0 }
 					/>
 					<div
@@ -796,7 +796,7 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
 						aria-valuemin={ minLevel }
 						aria-valuemax={ maxLevel }
 						aria-valuenow={ endLevel }
-						aria-label={ __( 'End level', 'gatherpress-venue-hierarchy' ) }
+						aria-label={ __( 'End level', 'gatherpress-location-hierarchy' ) }
 						tabIndex={ 0 }
 					/>
 				</div>
@@ -804,7 +804,7 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
 			
 			<div className="dual-range-control__output">
 				<span className="dual-range-control__output-label">
-					{ __( 'Selected:', 'gatherpress-venue-hierarchy' ) }
+					{ __( 'Selected:', 'gatherpress-location-hierarchy' ) }
 				</span>
 				<strong>
 					{ startLevel === endLevel
@@ -820,9 +820,9 @@ function DualRangeControl( { label, minLevel, maxLevel, startLevel, endLevel, on
  * Component: BlockInspectorControls
  * File: Originally src/components/BlockInspectorControls.js
  * 
- * **What:** Inspector controls panel (settings sidebar) for the block.
+ * Inspector controls panel (settings sidebar) for the block.
  * 
- * **Why:** WordPress blocks use the Inspector Controls to provide settings that affect
+ * WordPress blocks use the Inspector Controls to provide settings that affect
  * block behavior. This component groups all block settings in a collapsible panel in
  * the sidebar, following WordPress block editor conventions.
  * 
@@ -874,9 +874,9 @@ function BlockInspectorControls( { attributes, setAttributes, minLevel, maxLevel
 	
 	return (
 		<InspectorControls>
-			<PanelBody title={ __( 'Hierarchy Settings', 'gatherpress-venue-hierarchy' ) }>
+			<PanelBody title={ __( 'Hierarchy Settings', 'gatherpress-location-hierarchy' ) }>
 				<DualRangeControl
-					label={ __( 'Hierarchy Levels', 'gatherpress-venue-hierarchy' ) }
+					label={ __( 'Hierarchy Levels', 'gatherpress-location-hierarchy' ) }
 					minLevel={ minLevel }
 					maxLevel={ maxLevel }
 					startLevel={ startLevel }
@@ -885,24 +885,24 @@ function BlockInspectorControls( { attributes, setAttributes, minLevel, maxLevel
 				/>
 				
 				<TextControl
-					label={ __( 'Separator', 'gatherpress-venue-hierarchy' ) }
+					label={ __( 'Separator', 'gatherpress-location-hierarchy' ) }
 					value={ separator }
 					onChange={ ( value ) => setAttributes( { separator: value } ) }
-					help={ __( 'Text to display between hierarchy levels', 'gatherpress-venue-hierarchy' ) }
+					help={ __( 'Text to display between hierarchy levels', 'gatherpress-location-hierarchy' ) }
 				/>
 				
 				<ToggleControl
-					label={ __( 'Enable term links', 'gatherpress-venue-hierarchy' ) }
+					label={ __( 'Enable term links', 'gatherpress-location-hierarchy' ) }
 					checked={ enableLinks }
 					onChange={ ( value ) => setAttributes( { enableLinks: value } ) }
-					help={ __( 'Link each term to its archive page', 'gatherpress-venue-hierarchy' ) }
+					help={ __( 'Link each term to its archive page', 'gatherpress-location-hierarchy' ) }
 				/>
 				
 				<ToggleControl
-					label={ __( 'Show venue', 'gatherpress-venue-hierarchy' ) }
+					label={ __( 'Show venue', 'gatherpress-location-hierarchy' ) }
 					checked={ showVenue }
 					onChange={ ( value ) => setAttributes( { showVenue: value } ) }
-					help={ __( 'Display the venue name at the end of the hierarchy', 'gatherpress-venue-hierarchy' ) }
+					help={ __( 'Display the venue name at the end of the hierarchy', 'gatherpress-location-hierarchy' ) }
 				/>
 			</PanelBody>
 		</InspectorControls>
@@ -918,10 +918,10 @@ function BlockInspectorControls( { attributes, setAttributes, minLevel, maxLevel
 /**
  * Main Edit Component
  * 
- * **What:** The primary edit function that renders the block in the WordPress editor.
+ * The primary edit function that renders the block in the WordPress editor.
  * This is called by WordPress when the block is inserted or edited.
  * 
- * **Why:** Every Gutenberg block requires an edit function that:
+ * Every Gutenberg block requires an edit function that:
  * - Renders the block's editor UI
  * - Provides controls for modifying block attributes
  * - Shows a preview of how the block will appear on the frontend
@@ -1023,7 +1023,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 	if ( ! isValidContext ) {
 		return (
 			<div { ...useBlockProps() }>
-				{ __( 'This block must be used within a GatherPress event', 'gatherpress-venue-hierarchy' ) }
+				{ __( 'This block must be used within a GatherPress event', 'gatherpress-location-hierarchy' ) }
 			</div>
 		);
 	}

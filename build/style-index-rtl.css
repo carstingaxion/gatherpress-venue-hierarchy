@@ -7,32 +7,32 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-.wp-block-telex-block-gatherpress-venue-hierarchy.alignleft {
+.wp-block-gatherpress-location-hierarchy.alignleft {
   margin-left: 1em;
   max-width: 50%;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy.alignright {
+.wp-block-gatherpress-location-hierarchy.alignright {
   margin-right: 1em;
   max-width: 50%;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy.aligncenter {
+.wp-block-gatherpress-location-hierarchy.aligncenter {
   margin-right: auto;
   margin-left: auto;
   text-align: center;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy.alignfull {
+.wp-block-gatherpress-location-hierarchy.alignfull {
   margin-right: 0;
   margin-left: 0;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy .gatherpress-location-link {
+.wp-block-gatherpress-location-hierarchy .gatherpress-location-link {
   transition: opacity 0.2s ease;
   white-space: nowrap;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy .gatherpress-location-link:hover {
+.wp-block-gatherpress-location-hierarchy .gatherpress-location-link:hover {
   opacity: 0.7;
   text-decoration: underline;
 }
-.wp-block-telex-block-gatherpress-venue-hierarchy .gatherpress-location-link:focus {
+.wp-block-gatherpress-location-hierarchy .gatherpress-location-link:focus {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }

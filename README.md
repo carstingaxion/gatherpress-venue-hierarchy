@@ -1,4 +1,4 @@
-# GatherPress Venue Hierarchy
+# GatherPress Location Hierarchy
 
 **Contributors:**      carstenbach & WordPress Telex  
 **Tags:**              block, gatherpress, venue, hierarchy, geocoding, location, events  
@@ -49,7 +49,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 6. If a term exists with incorrect parent, the plugin updates the parent relationship
 7. All term IDs are associated with the event using wp_set_object_terms()
 8. Respects hierarchy level filter to only create terms within configured range
-9. Applies 'gatherpress_venue_hierarchy_term_args' filter before term insertion
+9. Applies 'gatherpress_location_hierarchy_term_args' filter before term insertion
 10. Country terms use country_code as slug via filter
 
 **Special Handling:**
@@ -74,7 +74,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 
 **Hierarchy Level Filtering:**
 
-* WordPress filter: 'gatherpress_venue_hierarchy_levels'
+* WordPress filter: 'gatherpress_location_hierarchy_levels'
 * Default range: [1, 6] (all levels)
 * Example: [2, 4] restricts to Country, State, City only
 * Affects both term creation and block display
@@ -119,7 +119,7 @@ This plugin extends GatherPress by adding a hierarchical location taxonomy. When
 **Implementation Details:**
 
 * Editor: Uses useSelect hook to query location terms and venue taxonomy
-* Frontend: Singleton renderer class (GatherPress_Venue_Hierarchy_Block_Renderer)
+* Frontend: Singleton renderer class (Block_Renderer)
 * Term retrieval: Ordered by parent relationship to maintain hierarchy
 * Path building: Identifies leaf terms (deepest in hierarchy), builds paths by traversing parents
 * Level filtering: Uses array_slice on complete paths based on startLevel/endLevel
@@ -149,7 +149,7 @@ Sites can configure which levels to use (e.g., country to city only) via WordPre
 
 ### Installation Steps
 
-1. Upload plugin files to `/wp-content/plugins/gatherpress-venue-hierarchy/`
+1. Upload plugin files to `/wp-content/plugins/gatherpress-location-hierarchy/`
 2. Activate the plugin through the WordPress Plugins menu
 3. Plugin registers taxonomy and block automatically on activation
 4. Taxonomy is registered at priority 5 (early) to prevent rewrite rule conflicts
@@ -167,7 +167,7 @@ Sites can configure which levels to use (e.g., country to city only) via WordPre
 Restrict hierarchy levels by adding a filter to your theme's functions.php:
 
 ```php
-add_filter( 'gatherpress_venue_hierarchy_levels', function() {
+add_filter( 'gatherpress_location_hierarchy_levels', function() {
     return [2, 4]; // Only Country, State, City
 } );
 ```
@@ -177,7 +177,7 @@ add_filter( 'gatherpress_venue_hierarchy_levels', function() {
 Customize term attributes before creation:
 
 ```php
-add_filter( 'gatherpress_venue_hierarchy_term_args', function( $args ) {
+add_filter( 'gatherpress_location_hierarchy_term_args', function( $args ) {
     // Countries use country code as slug (already implemented by default)
     if ( 2 === $args['level'] && ! empty( $args['location']['country_code'] ) ) {
         $args['slug'] = $args['location']['country_code'];
@@ -224,7 +224,7 @@ $args = array(
     'post_type' => 'gatherpress_event',
     'tax_query' => array(
         array(
-            'taxonomy' => 'gatherpress-location',
+            'taxonomy' => 'gatherpress_location',
             'field'    => 'slug',
             'terms'    => 'bavaria',
         ),
@@ -244,14 +244,14 @@ Use the block's dual-range control:
 Or configure globally via filter:
 
 ```php
-add_filter( 'gatherpress_venue_hierarchy_levels', function() {
+add_filter( 'gatherpress_location_hierarchy_levels', function() {
     return [1, 4]; // Continent to City only
 } );
 ```
 
 ### Can I customize block appearance?
 
-The block supports WordPress color controls (text, background, link), typography, spacing, and border settings. Custom CSS can target `.wp-block-telex-block-gatherpress-venue-hierarchy` class.
+The block supports WordPress color controls (text, background, link), typography, spacing, and border settings. Custom CSS can target `.wp-block-gatherpress-location-hierarchy` class.
 
 ### Does this affect performance?
 
@@ -267,7 +267,7 @@ Performance considerations:
 
 Canonical URLs tell search engines which page is the "main" version when multiple URLs show identical content. When a location term has only one child, both taxonomy archives display the same events (duplicate content). The plugin adds a canonical link tag pointing to the child's archive, consolidating SEO value and preventing search engine confusion.
 
-Example: If Europe has only Germany as child, /location/europe/ shows canonical tag pointing to /location/europe/germany/.
+Example: If Europe has only Germany as child, /events/in/europe/ shows canonical tag pointing to /events/in/europe/germany/.
 
 ### How does slug generation work?
 
@@ -299,7 +299,7 @@ The filter restricts which levels are processed:
 
 ### 0.1.0
 * Initial release
-* Hierarchical gatherpress-location taxonomy (6 levels)
+* Hierarchical gatherpress_location taxonomy (6 levels)
 * Nominatim API integration with 1-hour caching and site language support
 * Automatic term creation with parent relationships
 * Country-to-continent mapping with WordPress i18n
@@ -329,11 +329,11 @@ The filter restricts which levels are processed:
 ### Data Structure
 
 **Taxonomy:**
-* Name: gatherpress-location
+* Name: gatherpress_location
 * Hierarchical: true
 * Post types: gatherpress_event
 * REST API: enabled
-* URL structure: /location/{term}/{child-term}/
+* URL structure: /events/in/{term}/{child-term}/
 * Rewrite: hierarchical (pretty URLs)
 * Admin column: visible
 * Default ordering: by parent (maintains hierarchy)
@@ -353,7 +353,7 @@ array(
 
 ### Class Architecture
 
-**GatherPress_Venue_Hierarchy** (Singleton)
+**Setup** (Singleton)
 * Registers taxonomy and block
 * Hooks into save_post_gatherpress_event (priority 20)
 * Manages settings page
@@ -362,7 +362,7 @@ array(
 * Localizes filter data to block editor
 * Adds canonical URLs for single-child terms
 
-**GatherPress_Venue_Geocoder** (Singleton)
+**Geocoder** (Singleton)
 * Handles Nominatim API communication
 * Manages transient caching (1-hour duration)
 * Parses API responses
@@ -371,7 +371,7 @@ array(
 * Handles German-speaking regions specially
 * Handles city-states (Berlin) with suburb fallback
 
-**GatherPress_Venue_Hierarchy_Builder** (Singleton)
+**Builder** (Singleton)
 * Creates taxonomy terms
 * Establishes parent-child relationships
 * Updates incorrect parent assignments
@@ -381,7 +381,7 @@ array(
 * Applies filter before term insertion
 * Uses country codes as slugs for countries
 
-**GatherPress_Venue_Hierarchy_Block_Renderer** (Singleton)
+**Block_Renderer** (Singleton)
 * Renders block on frontend
 * Retrieves location terms
 * Builds hierarchical paths
@@ -396,7 +396,7 @@ array(
 ```php
 $terms = wp_get_object_terms(
     $event_id,
-    'gatherpress-location',
+    'gatherpress_location',
     array( 'orderby' => 'parent', 'order' => 'ASC' )
 );
 ```
@@ -407,7 +407,7 @@ $events = new WP_Query( array(
     'post_type' => 'gatherpress_event',
     'tax_query' => array(
         array(
-            'taxonomy' => 'gatherpress-location',
+            'taxonomy' => 'gatherpress_location',
             'field'    => 'slug',
             'terms'    => 'de', // Country code as slug
         ),
@@ -417,7 +417,7 @@ $events = new WP_Query( array(
 
 **Get hierarchical term path:**
 ```php
-$term = get_term_by( 'slug', 'munich', 'gatherpress-location' );
+$term = get_term_by( 'slug', 'munich', 'gatherpress_location' );
 $path = array();
 $current = $term;
 while ( $current ) {
@@ -429,14 +429,14 @@ while ( $current ) {
 
 **Configure hierarchy levels:**
 ```php
-add_filter( 'gatherpress_venue_hierarchy_levels', function() {
+add_filter( 'gatherpress_location_hierarchy_levels', function() {
     return [2, 4]; // Country, State, City only
 } );
 ```
 
 **Customize term attributes:**
 ```php
-add_filter( 'gatherpress_venue_hierarchy_term_args', function( $args ) {
+add_filter( 'gatherpress_location_hierarchy_term_args', function( $args ) {
     // Example: Add custom meta or modify name
     if ( 2 === $args['level'] ) { // Country level
         // Country already uses country_code as slug by default
@@ -453,12 +453,12 @@ $events = new WP_Query( array(
     'tax_query' => array(
         'relation' => 'OR',
         array(
-            'taxonomy' => 'gatherpress-location',
+            'taxonomy' => 'gatherpress_location',
             'field'    => 'slug',
             'terms'    => 'bavaria',
         ),
         array(
-            'taxonomy' => 'gatherpress-location',
+            'taxonomy' => 'gatherpress_location',
             'field'    => 'slug',
             'terms'    => 'saxony',
         ),
@@ -474,11 +474,11 @@ $events = new WP_Query( array(
 * `wp_head` (priority 1) - Adds canonical links
 
 **Filters:**
-* `gatherpress_venue_hierarchy_levels` - Configure allowed levels
+* `gatherpress_location_hierarchy_levels` - Configure allowed levels
   - Default: [1, 6]
   - Return: [min_level, max_level]
   - Example: [2, 4] for Country to City
-* `gatherpress_venue_hierarchy_term_args` - Customize term attributes
+* `gatherpress_location_hierarchy_term_args` - Customize term attributes
   - Receives: ['name', 'slug', 'parent', 'taxonomy', 'level', 'location']
   - Return: Modified args array
   - Used for country code slugs

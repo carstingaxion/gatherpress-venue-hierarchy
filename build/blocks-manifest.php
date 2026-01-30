@@ -4,7 +4,7 @@ return array(
 	'build' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
-		'name' => 'telex/block-gatherpress-venue-hierarchy',
+		'name' => 'gatherpress/location-hierarchy',
 		'version' => '0.1.0',
 		'title' => 'Location Hierarchy',
 		'category' => 'gatherpress',
@@ -84,7 +84,7 @@ return array(
 				)
 			)
 		),
-		'textdomain' => 'gatherpress-venue-hierarchy',
+		'textdomain' => 'gatherpress-location-hierarchy',
 		'editorScript' => 'file:./index.js',
 		'editorStyle' => 'file:./index.css',
 		'style' => 'file:./style-index.css',

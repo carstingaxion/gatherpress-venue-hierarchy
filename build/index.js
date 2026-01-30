@@ -8,7 +8,7 @@
   \************************/
 (module) {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"telex/block-gatherpress-venue-hierarchy","version":"0.1.0","title":"Location Hierarchy","category":"gatherpress","icon":"admin-site-alt3","description":"Displays the complete location hierarchy as inline text","example":{},"attributes":{"startLevel":{"type":"number","default":1},"endLevel":{"type":"number","default":6},"enableLinks":{"type":"boolean","default":false},"showVenue":{"type":"boolean","default":false},"separator":{"type":"string","default":" > "}},"usesContext":["postId","postType"],"supports":{"anchor":true,"html":false,"color":{"gradients":true,"link":true,"__experimentalDefaultControls":{"background":true,"text":true,"link":true}},"spacing":{"margin":true,"padding":true},"typography":{"fontSize":true,"lineHeight":true,"__experimentalFontFamily":true,"__experimentalFontWeight":true,"__experimentalFontStyle":true,"__experimentalTextTransform":true,"__experimentalTextDecoration":true,"__experimentalLetterSpacing":true,"__experimentalDefaultControls":{"fontSize":true}},"interactivity":{"clientNavigation":true},"__experimentalBorder":{"radius":true,"color":true,"width":true,"style":true,"__experimentalDefaultControls":{"radius":true,"color":true,"width":true,"style":true}}},"textdomain":"gatherpress-venue-hierarchy","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"gatherpress/location-hierarchy","version":"0.1.0","title":"Location Hierarchy","category":"gatherpress","icon":"admin-site-alt3","description":"Displays the complete location hierarchy as inline text","example":{},"attributes":{"startLevel":{"type":"number","default":1},"endLevel":{"type":"number","default":6},"enableLinks":{"type":"boolean","default":false},"showVenue":{"type":"boolean","default":false},"separator":{"type":"string","default":" > "}},"usesContext":["postId","postType"],"supports":{"anchor":true,"html":false,"color":{"gradients":true,"link":true,"__experimentalDefaultControls":{"background":true,"text":true,"link":true}},"spacing":{"margin":true,"padding":true},"typography":{"fontSize":true,"lineHeight":true,"__experimentalFontFamily":true,"__experimentalFontWeight":true,"__experimentalFontStyle":true,"__experimentalTextTransform":true,"__experimentalTextDecoration":true,"__experimentalLetterSpacing":true,"__experimentalDefaultControls":{"fontSize":true}},"interactivity":{"clientNavigation":true},"__experimentalBorder":{"radius":true,"color":true,"width":true,"style":true,"__experimentalDefaultControls":{"radius":true,"color":true,"width":true,"style":true}}},"textdomain":"gatherpress-location-hierarchy","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ },
 
@@ -86,13 +86,13 @@ __webpack_require__.r(__webpack_exports__);
  * Hook: useAllowedLevels
  * File: Originally src/hooks/useAllowedLevels.js
  * 
- * **What:** Gets allowed hierarchy levels from localized script data.
+ * Gets allowed hierarchy levels from localized script data.
  * 
- * **Why:** The PHP side filters which hierarchy levels are available (e.g., continent to city only).
+ * The PHP side filters which hierarchy levels are available (e.g., continent to city only).
  * This hook provides that configuration to the editor so the dual-range control can adjust
  * its bounds and prevent users from selecting unavailable levels.
  * 
- * **How:** Reads from window.gatherPressVenueHierarchy object, which is populated via
+ * Reads from window.gatherPressLocationHierarchy object, which is populated via
  * wp_localize_script() in PHP. Provides fallback defaults (1-6) if data is missing.
  * 
  * @since 0.1.0
@@ -109,7 +109,7 @@ __webpack_require__.r(__webpack_exports__);
 function useAllowedLevels() {
   const {
     allowedLevels
-  } = window.gatherPressVenueHierarchy || {};
+  } = window.gatherPressLocationHierarchy || {};
   const minLevel = allowedLevels?.min || 1;
   const maxLevel = allowedLevels?.max || 6;
   return {
@@ -122,13 +122,13 @@ function useAllowedLevels() {
  * Hook: usePostContext
  * File: Originally src/hooks/usePostContext.js
  * 
- * **What:** Gets post context information including post ID, type, and query loop status.
+ * Gets post context information including post ID, type, and query loop status.
  * 
- * **Why:** The block needs to know which post it's rendering in to fetch the correct location
+ * The block needs to know which post it's rendering in to fetch the correct location
  * data. Context behavior differs between single posts and query loops, requiring different
  * handling for each case.
  * 
- * **How:** Reads from the block's context object (provided by WordPress), extracts post ID,
+ * Reads from the block's context object (provided by WordPress), extracts post ID,
  * post type, and query ID. Determines if block is in a query loop and validates that the
  * post is a GatherPress event.
  * 
@@ -167,15 +167,15 @@ function usePostContext(context) {
  * Hook: useLocationData
  * File: Originally src/hooks/useLocationData.js
  * 
- * **What:** Fetches location terms and venue information for an event using useEntityProp for direct reactivity.
+ * Fetches location terms and venue information for an event using useEntityProp for direct reactivity.
  * 
- * **Why:** The editor needs to display location hierarchy and optionally venue information.
+ * The editor needs to display location hierarchy and optionally venue information.
  * Using useEntityProp provides direct access to post entity properties with automatic reactivity,
  * ensuring immediate updates when terms are modified in the sidebar panel.
  * 
- * **How:** 
+ * 
  * - Uses useEntityProp to directly access taxonomy term IDs from the post entity
- * - Fetches gatherpress-location taxonomy term IDs
+ * - Fetches gatherpress_location taxonomy term IDs
  * - Optionally fetches _gatherpress_venue taxonomy term ID if showVenue is true
  * - Uses useSelect to resolve term IDs into full term objects with names and links
  * - Returns both data and loading state for proper loading UI
@@ -196,7 +196,7 @@ function usePostContext(context) {
  * if ( isLoading ) {
  *   return <Spinner />;
  * }
- * console.log( locationTerms ); // [{ id: 1, name: 'Europe', parent: 0, link: '/location/europe/' }, ...]
+ * console.log( locationTerms ); // [{ id: 1, name: 'Europe', parent: 0, link: '/events/in/europe/' }, ...]
  * console.log( venueName ); // 'Main Conference Hall'
  */
 function useLocationData(postId, showVenue, refreshTrigger) {
@@ -215,7 +215,7 @@ function useLocationData(postId, showVenue, refreshTrigger) {
   }, [refreshTrigger, postId, invalidateResolution]);
 
   // Get location term IDs using useEntityProp for direct reactivity
-  const [locationTermIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__.useEntityProp)('postType', 'gatherpress_event', 'gatherpress-location', postId);
+  const [locationTermIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__.useEntityProp)('postType', 'gatherpress_event', 'gatherpress_location', postId);
 
   // Get venue term IDs using useEntityProp if showVenue is true
   const [venueTermIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__.useEntityProp)('postType', 'gatherpress_event', '_gatherpress_venue', showVenue ? postId : null);
@@ -245,11 +245,11 @@ function useLocationData(postId, showVenue, refreshTrigger) {
     let termsResolving = false;
     if (locationTermIds && Array.isArray(locationTermIds) && locationTermIds.length > 0) {
       for (const termId of locationTermIds) {
-        const term = getEntityRecord('taxonomy', 'gatherpress-location', termId);
+        const term = getEntityRecord('taxonomy', 'gatherpress_location', termId);
         if (term) {
           terms.push(term);
         }
-        if (checkResolving('getEntityRecord', ['taxonomy', 'gatherpress-location', termId])) {
+        if (checkResolving('getEntityRecord', ['taxonomy', 'gatherpress_location', termId])) {
           termsResolving = true;
         }
       }
@@ -289,10 +289,10 @@ function useLocationData(postId, showVenue, refreshTrigger) {
  * Hook: useLocationHierarchy
  * File: Originally src/hooks/useLocationHierarchy.js
  * 
- * **What:** Builds location hierarchy display string from terms, applying level filtering
+ * Builds location hierarchy display string from terms, applying level filtering
  * and formatting with links/separators.
  * 
- * **Why:** Terms come from the database as flat array with parent relationships. Need to:
+ * Terms come from the database as flat array with parent relationships. Need to:
  * - Build hierarchical paths (Europe > Germany > Bavaria > Munich)
  * - Filter to selected level range (e.g., only show Country to City)
  * - Format with custom separator and optional links
@@ -346,7 +346,7 @@ function useLocationHierarchy(postId, locationTerms, venueName, venueLink, start
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
     setIsLoading(true);
     if (!postId) {
-      setHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No post ID available', 'gatherpress-venue-hierarchy'));
+      setHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No post ID available', 'gatherpress-location-hierarchy'));
       setIsLoading(false);
       return;
     }
@@ -356,7 +356,7 @@ function useLocationHierarchy(postId, locationTerms, venueName, venueLink, start
         const venueText = enableLinks && venueLink ? `<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault();">${venueName}</a>` : venueName;
         setHierarchy(venueText);
       } else {
-        const message = isInQueryLoop ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Location hierarchy will appear here for matching events', 'gatherpress-venue-hierarchy') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for this event', 'gatherpress-venue-hierarchy');
+        const message = isInQueryLoop ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Location hierarchy will appear here for matching events', 'gatherpress-location-hierarchy') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for this event', 'gatherpress-location-hierarchy');
         setHierarchy(message);
       }
       setIsLoading(false);
@@ -371,7 +371,7 @@ function useLocationHierarchy(postId, locationTerms, venueName, venueLink, start
         const venueText = enableLinks && venueLink ? `<a href="${venueLink}" class="gatherpress-location-link gatherpress-venue-link" onclick="event.preventDefault();">${venueName}</a>` : venueName;
         setHierarchy(venueText);
       } else {
-        setHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for selected levels', 'gatherpress-venue-hierarchy'));
+        setHierarchy((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No location hierarchy available for selected levels', 'gatherpress-location-hierarchy'));
       }
       setIsLoading(false);
       return;
@@ -395,9 +395,9 @@ function useLocationHierarchy(postId, locationTerms, venueName, venueLink, start
 /**
  * Helper function: buildHierarchyPaths
  * 
- * **What:** Constructs hierarchical path strings from flat term array.
+ * Constructs hierarchical path strings from flat term array.
  * 
- * **Why:** Terms come as flat array with parent IDs. Need to:
+ * Terms come as flat array with parent IDs. Need to:
  * - Identify leaf terms (most specific, deepest in hierarchy)
  * - Build full paths by traversing parent relationships
  * - Filter paths to selected level range
@@ -467,9 +467,9 @@ function buildHierarchyPaths(terms, startLevel, endLevel, minLevel, enableLinks,
 /**
  * Helper function: buildTermPath
  * 
- * **What:** Recursively builds complete path from child term to root by traversing parent relationships.
+ * Recursively builds complete path from child term to root by traversing parent relationships.
  * 
- * **Why:** Each term only knows its immediate parent, not full ancestry. Need to traverse
+ * Each term only knows its immediate parent, not full ancestry. Need to traverse
  * up the hierarchy to build complete paths like "Europe > Germany > Bavaria > Munich".
  * Loop detection prevents infinite recursion if relationships are corrupted.
  * 
@@ -492,7 +492,7 @@ function buildHierarchyPaths(terms, startLevel, endLevel, minLevel, enableLinks,
  * 
  * @example
  * const path = buildTermPath(
- *   { id: 4, name: 'Munich', parent: 3, link: '/location/.../munich/' },
+ *   { id: 4, name: 'Munich', parent: 3, link: '/events/in/.../munich/' },
  *   allTerms,
  *   true
  * );
@@ -535,9 +535,9 @@ function buildTermPath(term, allTerms, enableLinks) {
  * Component: DualRangeControl
  * File: Originally src/components/DualRangeControl.js
  * 
- * **What:** Custom dual-handle range control for selecting hierarchy level range with visual track.
+ * Custom dual-handle range control for selecting hierarchy level range with visual track.
  * 
- * **Why:** WordPress doesn't provide a dual-range control component. Need to allow users to
+ * WordPress doesn't provide a dual-range control component. Need to allow users to
  * select both start and end levels on a single slider to define which hierarchy levels to display.
  * Standard approach would require two separate controls, making the relationship unclear.
  * 
@@ -583,7 +583,7 @@ function DualRangeControl({
   const [isDraggingStart, setIsDraggingStart] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [isDraggingEnd, setIsDraggingEnd] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [trackRef, setTrackRef] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
-  const levelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Continent', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Street', 'gatherpress-venue-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number', 'gatherpress-venue-hierarchy')];
+  const levelLabels = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Continent', 'gatherpress-location-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Country', 'gatherpress-location-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('State', 'gatherpress-location-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('City', 'gatherpress-location-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Street', 'gatherpress-location-hierarchy'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number', 'gatherpress-location-hierarchy')];
 
   // Filter labels to only show those within allowed range
   const visibleLabels = levelLabels.slice(minLevel - 1, maxLevel);
@@ -697,7 +697,7 @@ function DualRangeControl({
       };
     }
   }, [isDraggingStart, isDraggingEnd, startLevel, endLevel]);
-  console.log('[DualRangeControl] Rendering with startLevel:', startLevel, 'endLevel:', endLevel);
+  // console.log( '[DualRangeControl] Rendering with startLevel:', startLevel, 'endLevel:', endLevel );
   const startPercent = getPositionPercent(startLevel);
   const endPercent = getPositionPercent(endLevel);
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)("div", {
@@ -737,7 +737,7 @@ function DualRangeControl({
           "aria-valuemin": minLevel,
           "aria-valuemax": maxLevel,
           "aria-valuenow": startLevel,
-          "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Start level', 'gatherpress-venue-hierarchy'),
+          "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Start level', 'gatherpress-location-hierarchy'),
           tabIndex: 0
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("div", {
           className: `dual-range-control__handle dual-range-control__handle--end ${isDraggingEnd ? 'is-dragging' : ''}`,
@@ -749,7 +749,7 @@ function DualRangeControl({
           "aria-valuemin": minLevel,
           "aria-valuemax": maxLevel,
           "aria-valuenow": endLevel,
-          "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('End level', 'gatherpress-venue-hierarchy'),
+          "aria-label": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('End level', 'gatherpress-location-hierarchy'),
           tabIndex: 0
         })]
       })
@@ -757,7 +757,7 @@ function DualRangeControl({
       className: "dual-range-control__output",
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("span", {
         className: "dual-range-control__output-label",
-        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Selected:', 'gatherpress-venue-hierarchy')
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Selected:', 'gatherpress-location-hierarchy')
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("strong", {
         children: startLevel === endLevel ? visibleLabels[startLevel - minLevel] : `${visibleLabels[startLevel - minLevel]} - ${visibleLabels[endLevel - minLevel]}`
       })]
@@ -769,9 +769,9 @@ function DualRangeControl({
  * Component: BlockInspectorControls
  * File: Originally src/components/BlockInspectorControls.js
  * 
- * **What:** Inspector controls panel (settings sidebar) for the block.
+ * Inspector controls panel (settings sidebar) for the block.
  * 
- * **Why:** WordPress blocks use the Inspector Controls to provide settings that affect
+ * WordPress blocks use the Inspector Controls to provide settings that affect
  * block behavior. This component groups all block settings in a collapsible panel in
  * the sidebar, following WordPress block editor conventions.
  * 
@@ -836,35 +836,35 @@ function BlockInspectorControls({
   };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
     children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hierarchy Settings', 'gatherpress-venue-hierarchy'),
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hierarchy Settings', 'gatherpress-location-hierarchy'),
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(DualRangeControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hierarchy Levels', 'gatherpress-venue-hierarchy'),
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hierarchy Levels', 'gatherpress-location-hierarchy'),
         minLevel: minLevel,
         maxLevel: maxLevel,
         startLevel: startLevel,
         endLevel: endLevel,
         onChange: handleLevelChange
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Separator', 'gatherpress-venue-hierarchy'),
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Separator', 'gatherpress-location-hierarchy'),
         value: separator,
         onChange: value => setAttributes({
           separator: value
         }),
-        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text to display between hierarchy levels', 'gatherpress-venue-hierarchy')
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text to display between hierarchy levels', 'gatherpress-location-hierarchy')
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enable term links', 'gatherpress-venue-hierarchy'),
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enable term links', 'gatherpress-location-hierarchy'),
         checked: enableLinks,
         onChange: value => setAttributes({
           enableLinks: value
         }),
-        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Link each term to its archive page', 'gatherpress-venue-hierarchy')
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Link each term to its archive page', 'gatherpress-location-hierarchy')
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show venue', 'gatherpress-venue-hierarchy'),
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show venue', 'gatherpress-location-hierarchy'),
         checked: showVenue,
         onChange: value => setAttributes({
           showVenue: value
         }),
-        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display the venue name at the end of the hierarchy', 'gatherpress-venue-hierarchy')
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display the venue name at the end of the hierarchy', 'gatherpress-location-hierarchy')
       })]
     })
   });
@@ -879,10 +879,10 @@ function BlockInspectorControls({
 /**
  * Main Edit Component
  * 
- * **What:** The primary edit function that renders the block in the WordPress editor.
+ * The primary edit function that renders the block in the WordPress editor.
  * This is called by WordPress when the block is inserted or edited.
  * 
- * **Why:** Every Gutenberg block requires an edit function that:
+ * Every Gutenberg block requires an edit function that:
  * - Renders the block's editor UI
  * - Provides controls for modifying block attributes
  * - Shows a preview of how the block will appear on the frontend
@@ -986,7 +986,7 @@ function Edit({
   if (!isValidContext) {
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsx)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This block must be used within a GatherPress event', 'gatherpress-venue-hierarchy')
+      children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This block must be used within a GatherPress event', 'gatherpress-location-hierarchy')
     });
   }
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_7__.Fragment, {
@@ -1031,38 +1031,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_plugins__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_core_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/core-data */ "@wordpress/core-data");
-/* harmony import */ var _wordpress_core_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_core_data__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/core-data */ "@wordpress/core-data");
+/* harmony import */ var _wordpress_core_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./style.scss */ "./src/style.scss");
 /* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./edit */ "./src/edit.js");
 /* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./block.json */ "./src/block.json");
-/**
- * Registers a new block provided a unique name and an object defining its behavior.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
- */
 
 
 
 
-
-
-
-
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * All files containing `style` keyword are bundled together. The code used
- * gets applied both to the front of your site and to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
 
 
 /**
  * Internal dependencies
- */
+*/
+
 
 
 const VenueTermChangeListener = () => {
@@ -1071,15 +1056,10 @@ const VenueTermChangeListener = () => {
   } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_2__.useDispatch)('core/editor');
   const postId = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_2__.useSelect)(select => select('core/editor').getCurrentPostId(), []);
   const postType = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_2__.useSelect)(select => select('core/editor').getCurrentPostType(), []);
-  const [venueTaxonomyIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_3__.useEntityProp)('postType', 'gatherpress_event', '_gatherpress_venue', postId);
-  const [, setLocationIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_3__.useEntityProp)('postType', 'gatherpress_event', 'gatherpress-location', postId);
-  const previousVenueIds = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useRef)(null);
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useEffect)(() => {
-    // console.log(
-    // 	'[VenueTermChangeListener] useEffect running...',
-    // 	{ postId, postType, venueTaxonomyIds }
-    // );
-
+  const [venueTaxonomyIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__.useEntityProp)('postType', 'gatherpress_event', '_gatherpress_venue', postId);
+  const [, setLocationIds] = (0,_wordpress_core_data__WEBPACK_IMPORTED_MODULE_4__.useEntityProp)('postType', 'gatherpress_event', 'gatherpress_location', postId);
+  const previousVenueIds = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)(null);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
     if (postType !== 'gatherpress_event') {
       return;
     }
@@ -1087,32 +1067,19 @@ const VenueTermChangeListener = () => {
 
     // First meaningful run
     if (previousVenueIds.current === undefined) {
-      // console.log(
-      // 	'[VenueTermChangeListener] Initializing previous venue.',
-      // 	{ currentVenue }
-      // );
       previousVenueIds.current = currentVenue;
       return;
     }
     const prev = previousVenueIds.current;
-
-    // console.log(
-    // 	'[VenueTermChangeListener] Comparing venues',
-    // 	{ prev, currentVenue }
-    // );
-
     const venueChanged = prev !== currentVenue;
     if (venueChanged && prev !== null) {
-      // console.log(
-      // 	'[VenueTermChangeListener] Venue changed → clearing location terms'
-      // );
-      // 1️⃣ Update entity (data truth)
+      // 1️. Update entity (data truth)
       setLocationIds([]);
 
-      // 2️⃣ Force editor taxonomy UI to sync
+      // 2️. Force editor taxonomy UI to sync
       editPost({
         taxonomies: {
-          "gatherpress-location": []
+          gatherpress_location: []
         }
       });
     }
@@ -1135,18 +1102,18 @@ const VenueTermChangeListener = () => {
 /**
  * Register the venue term change listener as a plugin.
  * 
- * **What:** Registers the venue term change listener as an editor plugin.
+ * Registers the venue term change listener as an editor plugin.
  * 
- * **Why:** Using registerPlugin ensures the listener:
+ * Using registerPlugin ensures the listener:
  * - Works globally in the editor (not tied to block instances)
  * - Properly integrates with WordPress's plugin system
  * - Automatically cleans up when editor unmounts
  * - Follows WordPress best practices for editor extensions
  * 
- * **How:** Calls registerPlugin with a unique name and our listener component.
+ * Calls registerPlugin with a unique name and our listener component.
  * WordPress handles the mounting/unmounting lifecycle automatically.
  */
-(0,_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__.registerPlugin)('gatherpress-venue-hierarchy-listener', {
+(0,_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__.registerPlugin)('gatherpress-location-hierarchy-listener', {
   render: VenueTermChangeListener
 });
 
@@ -1411,7 +1378,7 @@ module.exports = window["ReactJSXRuntime"];
 /******/ 			return __webpack_require__.O(result);
 /******/ 		}
 /******/ 		
-/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkblock_gatherpress_venue_hierarchy"] = globalThis["webpackChunkblock_gatherpress_venue_hierarchy"] || [];
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkgatherpress_location_hierarchy"] = globalThis["webpackChunkgatherpress_location_hierarchy"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();

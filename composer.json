@@ -1,6 +1,6 @@
 {
-    "name": "carstingaxion/gatherpress-calendar",
-    "description": "A calendar block that displays Query Loop results in a monthly calendar format. Works with any post type, with specialized support for GatherPress events.",
+    "name": "carstingaxion/gatherpress-location-hierarchy",
+    "description": "",
     "license": "GPL-3.0+",
     "type": "wordpress-plugin",
     "keywords": [
@@ -19,11 +19,11 @@
             "role": "Developer"
         }
     ],
-    "homepage": "https://github.com/carstingaxion/gatherpress-calendar",
+    "homepage": "https://github.com/carstingaxion/gatherpress-location-hierarchy",
     "support": {
         "email": "info@figuren.theater",
-        "issues": "https://github.com/carstingaxion/gatherpress-calendar/issues",
-        "source": "https://github.com/carstingaxion/gatherpress-calendar"
+        "issues": "https://github.com/carstingaxion/gatherpress-location-hierarchy/issues",
+        "source": "https://github.com/carstingaxion/gatherpress-location-hierarchy"
     },
     "require-dev": {
         "figuren-theater/code-quality": "*"
